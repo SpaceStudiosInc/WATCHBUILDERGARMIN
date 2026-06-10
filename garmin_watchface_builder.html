@@ -1,0 +1,410 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary)}
+h2{font-size:16px;font-weight:500;margin-bottom:12px}
+.builder{display:grid;grid-template-columns:1fr 220px 1fr;gap:16px;padding:1rem 0;align-items:start}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px}
+.watch-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+#watchCanvas{border-radius:40%;cursor:crosshair;display:block}
+.field-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;cursor:grab;background:var(--color-background-secondary);margin:4px 3px;user-select:none}
+.field-chip:active{cursor:grabbing}
+.field-chip.on-watch{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.section-label{font-size:11px;color:var(--color-text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
+.ctrl-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ctrl-row label{font-size:12px;color:var(--color-text-secondary);min-width:80px}
+.ctrl-row input[type=color]{width:32px;height:28px;padding:1px;border:0.5px solid var(--color-border-tertiary);border-radius:4px;cursor:pointer}
+.ctrl-row input[type=range]{flex:1}
+.ctrl-row select{flex:1;font-size:12px}
+.ctrl-row input[type=text]{flex:1;font-size:12px;padding:4px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary)}
+.btn{padding:7px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;font-size:13px;background:transparent;color:var(--color-text-primary)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn.primary{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.btn.primary:hover{opacity:.85}
+.btn.danger{color:var(--color-text-danger);border-color:var(--color-border-danger)}
+.code-out{font-family:var(--font-mono);font-size:10.5px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;white-space:pre;overflow-x:auto;max-height:340px;overflow-y:auto;color:var(--color-text-primary)}
+.field-list-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:6px;background:var(--color-background-secondary);font-size:12px}
+.field-list-item .drag-handle{color:var(--color-text-tertiary);cursor:move}
+.field-list-item select{font-size:11px;border:none;background:transparent;color:var(--color-text-secondary)}
+.tabs{display:flex;gap:4px;margin-bottom:12px}
+.tab{padding:5px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;font-size:12px;background:transparent;color:var(--color-text-secondary)}
+.tab.active{background:var(--color-background-primary);color:var(--color-text-primary);border-color:var(--color-border-primary);font-weight:500}
+.badge{font-size:10px;padding:2px 6px;border-radius:10px;background:var(--color-background-success);color:var(--color-text-success)}
+</style>
+
+<h2 style="padding:1rem 0 0.5rem">Garmin watchface builder</h2>
+<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px">Drag fields onto the watch preview, style them, then export Monkey C code for Garmin Connect IQ / Visual Studio.</p>
+
+<div class="builder">
+  <div class="panel" id="leftPanel">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('fields')">Fields</button>
+      <button class="tab" onclick="switchTab('style')">Style</button>
+    </div>
+
+    <div id="tab-fields">
+      <div class="section-label">drag onto watch</div>
+      <div id="fieldPalette"></div>
+      <div class="section-label" style="margin-top:14px">placed fields</div>
+      <div id="placedList"><p style="font-size:12px;color:var(--color-text-tertiary)">Click a field above, then click where to place it on the watch.</p></div>
+    </div>
+
+    <div id="tab-style" style="display:none">
+      <div class="section-label">background</div>
+      <div class="ctrl-row"><label>BG color</label><input type="color" id="bgColor" value="#000000" oninput="redraw()"></div>
+      <div class="ctrl-row"><label>BG image</label>
+        <select id="bgImage" onchange="redraw()">
+          <option value="none">None</option>
+          <option value="gradient_dark">Dark gradient</option>
+          <option value="gradient_blue">Blue gradient</option>
+          <option value="dots">Dot grid</option>
+          <option value="circuit">Circuit lines</option>
+        </select>
+      </div>
+      <div class="section-label" style="margin-top:14px">selected field</div>
+      <p id="selFieldNote" style="font-size:12px;color:var(--color-text-tertiary)">Click a placed field to select it.</p>
+      <div id="fieldStyleControls" style="display:none">
+        <div class="ctrl-row"><label>Color</label><input type="color" id="fieldColor" value="#ffffff" oninput="updateSelected('color',this.value);redraw()"></div>
+        <div class="ctrl-row"><label>Font size</label><input type="range" id="fontSize" min="14" max="56" value="24" oninput="updateSelected('size',+this.value);redraw()"><span id="fontSizeVal" style="font-size:11px;min-width:28px">24</span></div>
+        <div class="ctrl-row"><label>Bold</label><select id="fontBold" onchange="updateSelected('bold',this.value==='true');redraw()"><option value="false">Regular</option><option value="true">Bold</option></select></div>
+        <div class="ctrl-row"><label>Align</label><select id="fieldAlign" onchange="updateSelected('align',this.value);redraw()"><option>center</option><option>left</option><option>right</option></select></div>
+        <div class="ctrl-row"><label>Label</label><input type="text" id="fieldLabel" placeholder="optional prefix" oninput="updateSelected('label',this.value);redraw()"></div>
+        <button class="btn danger" style="margin-top:8px;font-size:12px" onclick="removeSelected()"><i class="ti ti-trash" aria-hidden="true"></i> Remove</button>
+      </div>
+      <div class="section-label" style="margin-top:14px">shape / bezel</div>
+      <div class="ctrl-row"><label>Watch shape</label>
+        <select id="watchShape" onchange="redraw()">
+          <option value="round">Round</option>
+          <option value="rect">Rectangle</option>
+          <option value="semiround">Semi-round</option>
+        </select>
+      </div>
+      <div class="ctrl-row"><label>Bezel color</label><input type="color" id="bezelColor" value="#333333" oninput="redraw()"></div>
+    </div>
+  </div>
+
+  <div class="watch-wrap">
+    <canvas id="watchCanvas" width="220" height="220"></canvas>
+    <p style="font-size:11px;color:var(--color-text-tertiary);text-align:center">click field chip → click on watch to place</p>
+    <button class="btn" onclick="clearAll()" style="font-size:12px"><i class="ti ti-refresh" aria-hidden="true"></i> Clear all</button>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h2 style="margin:0">Monkey C output</h2>
+      <button class="btn primary" onclick="copyCode()"><i class="ti ti-copy" aria-hidden="true"></i> Copy</button>
+    </div>
+    <div class="ctrl-row"><label>App name</label><input type="text" id="appName" value="MyWatchFace" oninput="updateCode()" style="flex:1;font-size:12px;padding:4px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary)"></div>
+    <div style="margin-top:8px">
+      <pre class="code-out" id="codeOut"></pre>
+    </div>
+    <p style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Paste into <code>source/YourFaceView.mc</code> in Garmin Connect IQ SDK / VS Code extension.</p>
+  </div>
+</div>
+
+<script>
+const FIELDS = [
+  {id:'time',label:'Time',symbol:'⏱',sample:'10:09',dataKey:'TIME'},
+  {id:'date',label:'Date',symbol:'📅',sample:'Wed 10',dataKey:'DATE'},
+  {id:'steps',label:'Steps',symbol:'👟',sample:'8,432',dataKey:'STEPS'},
+  {id:'heart',label:'Heart rate',symbol:'♥',sample:'72 bpm',dataKey:'HEART_RATE'},
+  {id:'battery',label:'Battery',symbol:'🔋',sample:'84%',dataKey:'BATTERY'},
+  {id:'calories',label:'Calories',symbol:'🔥',sample:'1,240',dataKey:'CALORIES'},
+  {id:'distance',label:'Distance',symbol:'📍',sample:'3.2 mi',dataKey:'DISTANCE'},
+  {id:'floors',label:'Floors',symbol:'🏢',sample:'12',dataKey:'FLOORS'},
+  {id:'stress',label:'Stress',symbol:'🧠',sample:'Low',dataKey:'STRESS'},
+  {id:'oxygen',label:'SpO2',symbol:'💨',sample:'98%',dataKey:'PULSE_OX'},
+  {id:'sunrise',label:'Sunrise',symbol:'🌅',sample:'5:42am',dataKey:'SUNRISE'},
+  {id:'sunset',label:'Sunset',symbol:'🌇',sample:'8:11pm',dataKey:'SUNSET'},
+  {id:'weather',label:'Weather',symbol:'🌤',sample:'75°F',dataKey:'WEATHER'},
+  {id:'active',label:'Active min',symbol:'⚡',sample:'42 min',dataKey:'ACTIVE_MINUTES'},
+];
+
+let placed = [];
+let selectedId = null;
+let pendingField = null;
+let dragging = null;
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-fields').style.display=t==='fields'?'':'none';
+  document.getElementById('tab-style').style.display=t==='style'?'':'none';
+}
+
+function buildPalette(){
+  const d=document.getElementById('fieldPalette');
+  d.innerHTML='';
+  FIELDS.forEach(f=>{
+    const alreadyOn=placed.some(p=>p.fieldId===f.id);
+    const c=document.createElement('span');
+    c.className='field-chip'+(alreadyOn?' on-watch':'');
+    c.title=alreadyOn?'Already placed — click to reselect':'Click then click on watch to place';
+    c.innerHTML=`<i class="ti ti-plus" aria-hidden="true" style="font-size:12px"></i> ${f.label}`;
+    c.onclick=()=>{
+      pendingField=f;
+      document.querySelectorAll('.field-chip').forEach(x=>x.style.outline='');
+      c.style.outline='2px solid var(--color-border-info)';
+    };
+    d.appendChild(c);
+  });
+}
+
+function buildPlacedList(){
+  const d=document.getElementById('placedList');
+  if(!placed.length){d.innerHTML='<p style="font-size:12px;color:var(--color-text-tertiary)">No fields placed yet.</p>';return;}
+  d.innerHTML='';
+  placed.forEach(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    const row=document.createElement('div');
+    row.className='field-list-item';
+    row.style.cursor='pointer';
+    if(selectedId===p.id) row.style.borderColor='var(--color-border-info)';
+    row.innerHTML=`<span style="font-size:13px">${f.symbol}</span><span style="flex:1">${f.label}</span><span style="font-size:10px;color:var(--color-text-tertiary)">${Math.round(p.x)},${Math.round(p.y)}</span>`;
+    row.onclick=()=>{selectField(p.id)};
+    d.appendChild(row);
+  });
+}
+
+function selectField(id){
+  selectedId=id;
+  const p=placed.find(x=>x.id===id);
+  document.getElementById('selFieldNote').style.display='none';
+  document.getElementById('fieldStyleControls').style.display='';
+  if(p){
+    document.getElementById('fieldColor').value=p.color;
+    document.getElementById('fontSize').value=p.size;
+    document.getElementById('fontSizeVal').textContent=p.size;
+    document.getElementById('fontBold').value=String(p.bold);
+    document.getElementById('fieldAlign').value=p.align;
+    document.getElementById('fieldLabel').value=p.label||'';
+  }
+  buildPlacedList();
+  redraw();
+}
+
+function updateSelected(key,val){
+  const p=placed.find(x=>x.id===selectedId);
+  if(p) p[key]=val;
+  if(key==='size') document.getElementById('fontSizeVal').textContent=val;
+  buildPlacedList();
+  updateCode();
+}
+
+function removeSelected(){
+  placed=placed.filter(x=>x.id!==selectedId);
+  selectedId=null;
+  document.getElementById('selFieldNote').style.display='';
+  document.getElementById('fieldStyleControls').style.display='none';
+  buildPalette();buildPlacedList();redraw();updateCode();
+}
+
+function clearAll(){placed=[];selectedId=null;document.getElementById('selFieldNote').style.display='';document.getElementById('fieldStyleControls').style.display='none';buildPalette();buildPlacedList();redraw();updateCode();}
+
+const canvas=document.getElementById('watchCanvas');
+const ctx=canvas.getContext('2d');
+
+function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return{r,g,b};}
+function hexToMonkeyC(hex){return '0x'+hex.slice(1).toUpperCase();}
+
+function redraw(){
+  const W=220,H=220,cx=110,cy=110,R=100;
+  ctx.clearRect(0,0,W,H);
+  const shape=document.getElementById('watchShape').value;
+  const bgCol=document.getElementById('bgColor').value;
+  const bezelCol=document.getElementById('bezelColor').value;
+  const bgImg=document.getElementById('bgImage').value;
+
+  ctx.save();
+  if(shape==='round'){ctx.beginPath();ctx.arc(cx,cy,R+8,0,Math.PI*2);ctx.fillStyle=bezelCol;ctx.fill();}
+  else if(shape==='rect'){ctx.fillStyle=bezelCol;ctx.beginPath();ctx.roundRect(cx-R-8,cy-R-8,(R+8)*2,(R+8)*2,14);ctx.fill();}
+  else{ctx.fillStyle=bezelCol;ctx.beginPath();ctx.roundRect(cx-R-8,cy-R-8,(R+8)*2,(R+8)*2,30);ctx.fill();}
+  ctx.restore();
+
+  ctx.save();
+  if(shape==='round'){ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();}
+  else if(shape==='rect'){ctx.beginPath();ctx.roundRect(cx-R,cy-R,R*2,R*2,8);ctx.clip();}
+  else{ctx.beginPath();ctx.roundRect(cx-R,cy-R,R*2,R*2,24);ctx.clip();}
+
+  ctx.fillStyle=bgCol;ctx.fillRect(0,0,W,H);
+
+  if(bgImg==='gradient_dark'){const g=ctx.createRadialGradient(cx,cy,20,cx,cy,R);g.addColorStop(0,'#1a1a2e');g.addColorStop(1,'#000000');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+  else if(bgImg==='gradient_blue'){const g=ctx.createRadialGradient(cx,cy,20,cx,cy,R);g.addColorStop(0,'#0a2a4a');g.addColorStop(1,'#000820');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+  else if(bgImg==='dots'){ctx.fillStyle='rgba(255,255,255,0.06)';for(let x=10;x<W;x+=14)for(let y=10;y<H;y+=14){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill();}}
+  else if(bgImg==='circuit'){ctx.strokeStyle='rgba(0,200,150,0.15)';ctx.lineWidth=1;for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(Math.random()*W,Math.random()*H);ctx.lineTo(Math.random()*W,Math.random()*H);ctx.stroke();}}
+
+  placed.forEach(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    const isSelected=p.id===selectedId;
+    ctx.font=`${p.bold?'bold ':''} ${p.size}px ${p.size>30?'var(--font-sans)':'sans-serif'}`;
+    ctx.fillStyle=p.color;
+    ctx.textAlign=p.align;
+    ctx.textBaseline='middle';
+    const txt=(p.label?p.label+' ':'')+f.sample;
+    const ax=p.align==='center'?p.x:(p.align==='left'?p.x-R*0.7:p.x+R*0.7);
+    ctx.fillText(txt,ax,p.y);
+    if(isSelected){ctx.strokeStyle='rgba(80,140,255,0.7)';ctx.lineWidth=1.5;const m=ctx.measureText(txt);const tw=m.width;const th=p.size*1.2;const lx=p.align==='center'?ax-tw/2:(p.align==='left'?ax:ax-tw);ctx.strokeRect(lx-3,p.y-th/2-2,tw+6,th+4);}
+  });
+  ctx.restore();
+  updateCode();
+}
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left;
+  const y=e.clientY-rect.top;
+  if(pendingField){
+    const id='f_'+Date.now();
+    placed.push({id,fieldId:pendingField.id,x,y,color:'#ffffff',size:24,bold:false,align:'center',label:''});
+    pendingField=null;
+    document.querySelectorAll('.field-chip').forEach(c=>c.style.outline='');
+    selectField(id);
+    buildPalette();buildPlacedList();redraw();updateCode();
+    return;
+  }
+  const hit=placed.find(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    ctx.font=`${p.bold?'bold ':''} ${p.size}px sans-serif`;
+    const txt=(p.label?p.label+' ':'')+f.sample;
+    const m=ctx.measureText(txt);
+    const tw=m.width,th=p.size*1.2;
+    const lx=p.align==='center'?p.x-tw/2:(p.align==='left'?p.x:p.x-tw);
+    return x>=lx-4&&x<=lx+tw+4&&y>=p.y-th/2-2&&y<=p.y+th/2+2;
+  });
+  if(hit){selectField(hit.id);switchTabByName('style');}
+  else{selectedId=null;document.getElementById('selFieldNote').style.display='';document.getElementById('fieldStyleControls').style.display='none';buildPlacedList();redraw();}
+});
+
+function switchTabByName(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>{b.classList.toggle('active',(i===0&&t==='fields')||(i===1&&t==='style'));});
+  document.getElementById('tab-fields').style.display=t==='fields'?'':'none';
+  document.getElementById('tab-style').style.display=t==='style'?'':'none';
+}
+
+let dragFieldId=null,dragOffX=0,dragOffY=0;
+canvas.addEventListener('mousedown',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const hit=placed.find(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    ctx.font=`${p.bold?'bold ':''} ${p.size}px sans-serif`;
+    const txt=(p.label?p.label+' ':'')+f.sample;
+    const m=ctx.measureText(txt);
+    const tw=m.width,th=p.size*1.2;
+    const lx=p.align==='center'?p.x-tw/2:(p.align==='left'?p.x:p.x-tw);
+    return x>=lx-4&&x<=lx+tw+4&&y>=p.y-th/2-2&&y<=p.y+th/2+2;
+  });
+  if(hit&&!pendingField){dragFieldId=hit.id;dragOffX=x-hit.x;dragOffY=y-hit.y;canvas.style.cursor='move';}
+});
+canvas.addEventListener('mousemove',e=>{
+  if(!dragFieldId)return;
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const p=placed.find(x=>x.id===dragFieldId);
+  if(p){p.x=x-dragOffX;p.y=y-dragOffY;redraw();}
+});
+canvas.addEventListener('mouseup',()=>{if(dragFieldId){dragFieldId=null;canvas.style.cursor='crosshair';buildPlacedList();updateCode();}});
+
+function updateCode(){
+  const appName=document.getElementById('appName').value||'MyWatchFace';
+  const bgCol=document.getElementById('bgColor').value;
+  const shape=document.getElementById('watchShape').value;
+
+  let imports=`import Toybox.WatchUi;\nimport Toybox.Graphics;\nimport Toybox.System;\nimport Toybox.ActivityMonitor;\nimport Toybox.Activity;\nimport Toybox.SensorHistory;\n`;
+
+  let fieldDecl=placed.map(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    return `    var _${f.id}Str as String = "";`;
+  }).join('\n');
+
+  let updateFields=placed.map(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    switch(f.id){
+      case 'time': return `        var now = System.getClockTime();\n        _timeStr = now.hour.format("%02d") + ":" + now.min.format("%02d");`;
+      case 'date': return `        var today = Gregorian.info(Time.now(), Time.FORMAT_MEDIUM);\n        _dateStr = today.day_of_week + " " + today.day;`;
+      case 'steps': return `        var ai = ActivityMonitor.getInfo();\n        _stepsStr = ai.steps != null ? ai.steps.toString() : "--";`;
+      case 'heart': return `        var act = Activity.getActivityInfo();\n        _heartStr = (act != null && act.currentHeartRate != null) ? act.currentHeartRate.toString() + " bpm" : "--";`;
+      case 'battery': return `        var sys = System.getSystemStats();\n        _batteryStr = sys.battery.format("%.0f") + "%";`;
+      case 'calories': return `        var ai2 = ActivityMonitor.getInfo();\n        _caloriesStr = ai2.calories != null ? ai2.calories.toString() : "--";`;
+      case 'distance': return `        var ai3 = ActivityMonitor.getInfo();\n        _distanceStr = ai3.distance != null ? (ai3.distance / 100000.0).format("%.1f") + " mi" : "--";`;
+      case 'floors': return `        var ai4 = ActivityMonitor.getInfo();\n        _floorsStr = ai4.floorsClimbed != null ? ai4.floorsClimbed.toString() : "--";`;
+      case 'oxygen': return `        _oxygenStr = "--"; // Requires PulseOx permission in manifest`;
+      case 'stress': return `        _stressStr = "--"; // Requires Body Battery sensor support`;
+      case 'sunrise': return `        _sunriseStr = "--"; // Use Toybox.Weather for sunrise/sunset`;
+      case 'sunset': return `        _sunsetStr = "--"; // Use Toybox.Weather for sunrise/sunset`;
+      case 'weather': return `        _weatherStr = "--"; // Requires Toybox.Weather and location permission`;
+      case 'active': return `        var ai5 = ActivityMonitor.getInfo();\n        _activeStr = ai5.activeMinutesWeek != null ? ai5.activeMinutesWeek.total.toString() + " min" : "--";`;
+      default: return `        _${f.id}Str = "--";`;
+    }
+  }).join('\n\n');
+
+  let drawCalls=placed.map(p=>{
+    const f=FIELDS.find(x=>x.id===p.fieldId);
+    const mc=hexToMonkeyC(p.color);
+    const xPos=Math.round(p.x);
+    const yPos=Math.round(p.y);
+    const justMap={center:'Graphics.TEXT_JUSTIFY_CENTER',left:'Graphics.TEXT_JUSTIFY_LEFT',right:'Graphics.TEXT_JUSTIFY_RIGHT'};
+    const just=justMap[p.align]||'Graphics.TEXT_JUSTIFY_CENTER';
+    const fontMap={14:'Graphics.FONT_XTINY',16:'Graphics.FONT_TINY',20:'Graphics.FONT_SMALL',24:'Graphics.FONT_MEDIUM',28:'Graphics.FONT_LARGE',32:'Graphics.FONT_NUMBER_MILD',40:'Graphics.FONT_NUMBER_MEDIUM',48:'Graphics.FONT_NUMBER_HOT',56:'Graphics.FONT_NUMBER_THAI_HOT'};
+    let fontKey='Graphics.FONT_MEDIUM';
+    const sizes=Object.keys(fontMap).map(Number).sort((a,b)=>a-b);
+    for(const s of sizes){if(p.size<=s){fontKey=fontMap[s];break;}}
+    if(p.bold&&p.size>=32) fontKey='Graphics.FONT_NUMBER_HOT';
+    const prefix=p.label?`"${p.label} " + `:'';
+    return `        dc.setColor(${mc}, Graphics.COLOR_TRANSPARENT);\n        dc.drawText(${xPos}, ${yPos}, ${fontKey}, ${prefix}_${f.id}Str, ${just} | Graphics.TEXT_JUSTIFY_VCENTER);`;
+  }).join('\n\n');
+
+  const shapeComment=shape==='round'?'Round (e.g. Fenix, Vivoactive)':shape==='rect'?'Rectangle (e.g. Venu Sq, Forerunner 255S)':'Semi-round (e.g. Forerunner 745)';
+
+  const code=`${imports}
+// Watch shape: ${shapeComment}
+// Generated by Garmin Watchface Builder
+
+class ${appName}View extends WatchUi.WatchFace {
+
+${fieldDecl}
+
+    function initialize() {
+        WatchFace.initialize();
+    }
+
+    function onLayout(dc as Dc) as Void {
+        setLayout(Rez.Layouts.WatchFace(dc));
+    }
+
+    function onShow() as Void {}
+
+    function onUpdate(dc as Dc) as Void {
+        _updateData();
+
+        // Background
+        dc.setColor(${hexToMonkeyC(bgCol)}, ${hexToMonkeyC(bgCol)});
+        dc.clear();
+
+${drawCalls}
+    }
+
+    function _updateData() as Void {
+${updateFields}
+    }
+
+    function onHide() as Void {}
+}`;
+
+  document.getElementById('codeOut').textContent=code;
+}
+
+function copyCode(){
+  const t=document.getElementById('codeOut').textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=event.target.closest('button');
+    const orig=b.innerHTML;
+    b.innerHTML='<i class="ti ti-check" aria-hidden="true"></i> Copied!';
+    setTimeout(()=>b.innerHTML=orig,2000);
+  });
+}
+
+buildPalette();
+buildPlacedList();
+redraw();
+</script>
