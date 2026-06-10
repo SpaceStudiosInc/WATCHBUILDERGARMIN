@@ -1,368 +1,1322 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garmin Watchface Builder</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary)}
-h2{font-size:16px;font-weight:500;margin-bottom:12px}
-.builder{display:grid;grid-template-columns:1fr 220px 1fr;gap:16px;padding:1rem 0;align-items:start}
-.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px}
-.watch-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
-#watchCanvas{border-radius:40%;cursor:crosshair;display:block}
-.field-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;cursor:grab;background:var(--color-background-secondary);margin:4px 3px;user-select:none}
-.field-chip:active{cursor:grabbing}
-.field-chip.on-watch{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
-.section-label{font-size:11px;color:var(--color-text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
-.ctrl-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.ctrl-row label{font-size:12px;color:var(--color-text-secondary);min-width:80px}
-.ctrl-row input[type=color]{width:32px;height:28px;padding:1px;border:0.5px solid var(--color-border-tertiary);border-radius:4px;cursor:pointer}
-.ctrl-row input[type=range]{flex:1}
-.ctrl-row select{flex:1;font-size:12px}
-.ctrl-row input[type=text]{flex:1;font-size:12px;padding:4px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary)}
-.btn{padding:7px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;font-size:13px;background:transparent;color:var(--color-text-primary)}
-.btn:hover{background:var(--color-background-secondary)}
-.btn.primary{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
-.btn.primary:hover{opacity:.85}
-.btn.danger{color:var(--color-text-danger);border-color:var(--color-border-danger)}
-.code-out{font-family:var(--font-mono);font-size:10.5px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;white-space:pre;overflow-x:auto;max-height:340px;overflow-y:auto;color:var(--color-text-primary)}
-.field-list-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:6px;background:var(--color-background-secondary);font-size:12px}
-.field-list-item .drag-handle{color:var(--color-text-tertiary);cursor:move}
-.field-list-item select{font-size:11px;border:none;background:transparent;color:var(--color-text-secondary)}
-.tabs{display:flex;gap:4px;margin-bottom:12px}
-.tab{padding:5px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;font-size:12px;background:transparent;color:var(--color-text-secondary)}
-.tab.active{background:var(--color-background-primary);color:var(--color-text-primary);border-color:var(--color-border-primary);font-weight:500}
-.badge{font-size:10px;padding:2px 6px;border-radius:10px;background:var(--color-background-success);color:var(--color-text-success)}
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141417;
+    --surface2: #1c1c21;
+    --border: #2a2a32;
+    --border2: #3a3a45;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --text3: #5a5a70;
+    --accent: #4f8ef7;
+    --accent2: #2a5cbf;
+    --green: #3ecf6e;
+    --red: #e05252;
+    --yellow: #f5c542;
+    --radius: 8px;
+    --radius2: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; min-height: 100vh; }
+
+  /* ── Header ── */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 12px; }
+  header svg { width: 28px; height: 28px; }
+  header h1 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  header span { font-size: 11px; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
+  .header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* ── Layout ── */
+  .app { display: grid; grid-template-columns: 260px 1fr 300px; height: calc(100vh - 53px); overflow: hidden; }
+
+  /* ── Panels ── */
+  .panel { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+  .panel:last-child { border-right: none; border-left: 1px solid var(--border); }
+  .panel-section { padding: 14px; border-bottom: 1px solid var(--border); }
+  .panel-section:last-child { border-bottom: none; }
+  .section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 10px; }
+
+  /* ── Center canvas area ── */
+  .canvas-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #0a0a0c; padding: 20px; overflow: auto; }
+  .canvas-wrap { position: relative; }
+  #watchCanvas { display: block; cursor: crosshair; }
+  .canvas-hint { font-size: 11px; color: var(--text3); text-align: center; max-width: 280px; line-height: 1.5; }
+  .canvas-toolbar { display: flex; gap: 6px; }
+
+  /* ── Buttons ── */
+  .btn { padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all .15s; font-family: var(--font); white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.accent:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .btn.sm { padding: 4px 8px; font-size: 11px; }
+  .btn.active { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,.1); }
+
+  /* ── Inputs ── */
+  input[type=text], input[type=number], select, textarea {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius); padding: 5px 8px; font-size: 12px; font-family: var(--font);
+    width: 100%; outline: none;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--accent); }
+  input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface2); cursor: pointer; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=file] { display: none; }
+  select option { background: var(--surface2); }
+
+  /* ── Row helpers ── */
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .row:last-child { margin-bottom: 0; }
+  .row label { color: var(--text2); min-width: 70px; font-size: 11px; flex-shrink: 0; }
+  .row .grow { flex: 1; min-width: 0; }
+  .row-val { font-size: 11px; color: var(--text2); min-width: 28px; text-align: right; }
+
+  /* ── Field chips ── */
+  .field-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface2); font-size: 11px; cursor: pointer; transition: all .15s; user-select: none; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.pending { border-color: var(--accent); background: rgba(79,142,247,.15); color: var(--accent); }
+  .chip.placed { border-color: var(--green); color: var(--green); background: rgba(62,207,110,.08); }
+
+  /* ── Placed field list ── */
+  .field-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); margin-bottom: 5px; cursor: pointer; transition: all .15s; }
+  .field-item:hover { border-color: var(--border2); }
+  .field-item.selected { border-color: var(--accent); background: rgba(79,142,247,.08); }
+  .field-item .fi-name { flex: 1; font-size: 12px; }
+  .field-item .fi-pos { font-size: 10px; color: var(--text3); }
+
+  /* ── Icon grid ── */
+  .icon-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-height: 160px; overflow-y: auto; }
+  .icon-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); cursor: pointer; transition: all .15s; font-size: 9px; color: var(--text3); text-align: center; }
+  .icon-cell:hover { border-color: var(--accent); color: var(--accent); }
+  .icon-cell.pending { border-color: var(--accent); background: rgba(79,142,247,.15); }
+  .icon-cell img { width: 24px; height: 24px; object-fit: contain; }
+  .icon-cell canvas { width: 24px; height: 24px; }
+
+  /* ── Image upload ── */
+  .upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius2); padding: 16px; text-align: center; cursor: pointer; transition: all .15s; color: var(--text3); font-size: 12px; line-height: 1.6; }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); color: var(--accent); }
+  .upload-zone.has-image { border-style: solid; border-color: var(--green); color: var(--green); }
+
+  /* ── Code output ── */
+  .code-wrap { flex: 1; overflow: auto; }
+  pre#codeOut { font-family: var(--mono); font-size: 11px; line-height: 1.6; padding: 14px; color: #c9d1d9; white-space: pre; tab-size: 4; }
+  /* syntax colors */
+  .kw { color: #ff7b72; }
+  .ty { color: #79c0ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .st { color: #a5d6ff; }
+  .nm { color: #ffa657; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 14px; font-size: 12px; cursor: pointer; color: var(--text3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Toast ── */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--green); color: #fff; font-size: 13px; font-weight: 600; padding: 8px 20px; border-radius: 20px; opacity: 0; transition: all .3s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── Separator ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+  .badge { font-size: 9px; padding: 1px 5px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--text3); vertical-align: middle; }
 </style>
+</head>
+<body>
 
-<h2 style="padding:1rem 0 0.5rem">Garmin watchface builder</h2>
-<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px">Drag fields onto the watch preview, style them, then export Monkey C code for Garmin Connect IQ / Visual Studio.</p>
-
-<div class="builder">
-  <div class="panel" id="leftPanel">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('fields')">Fields</button>
-      <button class="tab" onclick="switchTab('style')">Style</button>
-    </div>
-
-    <div id="tab-fields">
-      <div class="section-label">drag onto watch</div>
-      <div id="fieldPalette"></div>
-      <div class="section-label" style="margin-top:14px">placed fields</div>
-      <div id="placedList"><p style="font-size:12px;color:var(--color-text-tertiary)">Click a field above, then click where to place it on the watch.</p></div>
-    </div>
-
-    <div id="tab-style" style="display:none">
-      <div class="section-label">background</div>
-      <div class="ctrl-row"><label>BG color</label><input type="color" id="bgColor" value="#000000" oninput="redraw()"></div>
-      <div class="ctrl-row"><label>BG image</label>
-        <select id="bgImage" onchange="redraw()">
-          <option value="none">None</option>
-          <option value="gradient_dark">Dark gradient</option>
-          <option value="gradient_blue">Blue gradient</option>
-          <option value="dots">Dot grid</option>
-          <option value="circuit">Circuit lines</option>
-        </select>
-      </div>
-      <div class="section-label" style="margin-top:14px">selected field</div>
-      <p id="selFieldNote" style="font-size:12px;color:var(--color-text-tertiary)">Click a placed field to select it.</p>
-      <div id="fieldStyleControls" style="display:none">
-        <div class="ctrl-row"><label>Color</label><input type="color" id="fieldColor" value="#ffffff" oninput="updateSelected('color',this.value);redraw()"></div>
-        <div class="ctrl-row"><label>Font size</label><input type="range" id="fontSize" min="14" max="56" value="24" oninput="updateSelected('size',+this.value);redraw()"><span id="fontSizeVal" style="font-size:11px;min-width:28px">24</span></div>
-        <div class="ctrl-row"><label>Bold</label><select id="fontBold" onchange="updateSelected('bold',this.value==='true');redraw()"><option value="false">Regular</option><option value="true">Bold</option></select></div>
-        <div class="ctrl-row"><label>Align</label><select id="fieldAlign" onchange="updateSelected('align',this.value);redraw()"><option>center</option><option>left</option><option>right</option></select></div>
-        <div class="ctrl-row"><label>Label</label><input type="text" id="fieldLabel" placeholder="optional prefix" oninput="updateSelected('label',this.value);redraw()"></div>
-        <button class="btn danger" style="margin-top:8px;font-size:12px" onclick="removeSelected()"><i class="ti ti-trash" aria-hidden="true"></i> Remove</button>
-      </div>
-      <div class="section-label" style="margin-top:14px">shape / bezel</div>
-      <div class="ctrl-row"><label>Watch shape</label>
-        <select id="watchShape" onchange="redraw()">
-          <option value="round">Round</option>
-          <option value="rect">Rectangle</option>
-          <option value="semiround">Semi-round</option>
-        </select>
-      </div>
-      <div class="ctrl-row"><label>Bezel color</label><input type="color" id="bezelColor" value="#333333" oninput="redraw()"></div>
-    </div>
+<header>
+  <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="14" cy="14" r="13" stroke="#4f8ef7" stroke-width="1.5"/>
+    <circle cx="14" cy="14" r="8" stroke="#4f8ef7" stroke-width="1" stroke-dasharray="2 2"/>
+    <rect x="12.5" y="7" width="2" height="7" rx="1" fill="#4f8ef7"/>
+    <rect x="14" y="12.5" width="5" height="2" rx="1" fill="#3ecf6e"/>
+    <circle cx="14" cy="14" r="1.5" fill="#fff"/>
+  </svg>
+  <h1>Garmin Watchface Builder</h1>
+  <span>Monkey C · Connect IQ</span>
+  <div class="header-right">
+    <button class="btn sm" onclick="loadPreset('fenix7')">Preset: Fenix 7</button>
+    <button class="btn sm" onclick="loadPreset('venu2')">Preset: Venu 2</button>
+    <button class="btn sm" onclick="loadPreset('fr255')">Preset: FR255</button>
+    <button class="btn accent" onclick="copyCode()">⬇ Copy Monkey C</button>
+    <button class="btn accent" onclick="downloadCode()">⬇ Download .mc</button>
   </div>
+</header>
 
-  <div class="watch-wrap">
-    <canvas id="watchCanvas" width="220" height="220"></canvas>
-    <p style="font-size:11px;color:var(--color-text-tertiary);text-align:center">click field chip → click on watch to place</p>
-    <button class="btn" onclick="clearAll()" style="font-size:12px"><i class="ti ti-refresh" aria-hidden="true"></i> Clear all</button>
-  </div>
+<div class="app">
 
+  <!-- ── LEFT PANEL ── -->
   <div class="panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h2 style="margin:0">Monkey C output</h2>
-      <button class="btn primary" onclick="copyCode()"><i class="ti ti-copy" aria-hidden="true"></i> Copy</button>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('fields',this)">Fields</div>
+      <div class="tab" onclick="switchTab('icons',this)">Icons</div>
+      <div class="tab" onclick="switchTab('watch',this)">Watch</div>
     </div>
-    <div class="ctrl-row"><label>App name</label><input type="text" id="appName" value="MyWatchFace" oninput="updateCode()" style="flex:1;font-size:12px;padding:4px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary)"></div>
-    <div style="margin-top:8px">
-      <pre class="code-out" id="codeOut"></pre>
+
+    <!-- FIELDS TAB -->
+    <div id="tab-fields">
+      <div class="panel-section">
+        <div class="section-title">data fields — click then click on watch</div>
+        <div class="field-grid" id="fieldPalette"></div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">placed fields</div>
+        <div id="placedList"><p style="color:var(--text3);font-size:11px">No fields placed yet.</p></div>
+      </div>
     </div>
-    <p style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Paste into <code>source/YourFaceView.mc</code> in Garmin Connect IQ SDK / VS Code extension.</p>
+
+    <!-- ICONS TAB -->
+    <div id="tab-icons" style="display:none">
+      <div class="panel-section">
+        <div class="section-title">garmin built-in drawables — click then click on watch</div>
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">custom image overlay</div>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:8px">PNG/JPG — gets exported as <code style="color:var(--accent)">Rez.Drawables.bgImage</code> in Monkey C. Copy the file to <code style="color:var(--accent)">resources/images/</code>.</p>
+        <div class="upload-zone" id="imgUploadZone" onclick="document.getElementById('imgFileInput').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+          📁 Click or drag an image here<br>
+          <span style="font-size:10px">PNG, JPG, BMP supported</span>
+        </div>
+        <input type="file" id="imgFileInput" accept="image/*" onchange="handleImageUpload(event)">
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn sm grow" onclick="clearBgImage()">Clear image</button>
+          <button class="btn sm grow" onclick="toggleBgImageVisible()">Toggle visible</button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">image draw mode</div>
+        <div class="row"><label>Fit mode</label>
+          <select class="grow" id="imgFitMode" onchange="redraw()">
+            <option value="cover">Cover (fill watch)</option>
+            <option value="contain">Contain (letterbox)</option>
+            <option value="stretch">Stretch</option>
+            <option value="center">Center (actual size)</option>
+          </select>
+        </div>
+        <div class="row"><label>Opacity</label>
+          <input type="range" min="10" max="100" value="100" id="imgOpacity" oninput="this.nextElementSibling.textContent=this.value+'%';redraw()">
+          <span class="row-val">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WATCH TAB -->
+    <div id="tab-watch" style="display:none">
+      <div class="panel-section">
+        <div class="section-title">device</div>
+        <div class="row"><label>Shape</label>
+          <select class="grow" id="watchShape" onchange="updateCanvasSize()">
+            <option value="round">Round</option>
+            <option value="rect">Rectangle</option>
+            <option value="semiround">Semi-round</option>
+          </select>
+        </div>
+        <div class="row"><label>Resolution</label>
+          <select class="grow" id="watchRes" onchange="updateCanvasSize()">
+            <option value="260">260×260 (Fenix 7, Epix 2)</option>
+            <option value="240">240×240 (Vivoactive 4)</option>
+            <option value="220">220×220 (Vivoactive 3)</option>
+            <option value="416">416×416 (Fenix 6X Pro)</option>
+            <option value="390">390×390 (Venu 2)</option>
+            <option value="280">280×280 (Forerunner 965)</option>
+            <option value="218x218">218×218 (Forerunner 255S)</option>
+            <option value="320x300">320×300 (Venu Sq 2, rect)</option>
+            <option value="200x200">200×200 (Instinct 2)</option>
+          </select>
+        </div>
+        <div class="row"><label>Preview size</label>
+          <input type="range" id="previewScale" min="140" max="380" value="240" oninput="this.nextElementSibling.textContent=this.value+'px';redraw()">
+          <span class="row-val">240px</span>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">background</div>
+        <div class="row"><label>BG color</label><input type="color" id="bgColor" value="#000000" oninput="redraw()"></div>
+        <div class="row"><label>Bezel color</label><input type="color" id="bezelColor" value="#2a2a2a" oninput="redraw()"></div>
+        <div class="row"><label>Bezel width</label>
+          <input type="range" min="0" max="20" value="8" id="bezelWidth" oninput="this.nextElementSibling.textContent=this.value+'px';redraw()">
+          <span class="row-val">8px</span>
+        </div>
+        <div class="row"><label>Show ticks</label>
+          <select class="grow" id="showTicks" onchange="redraw()">
+            <option value="none">None</option>
+            <option value="hour">Hour marks</option>
+            <option value="minute">All marks</option>
+          </select>
+        </div>
+        <div class="row"><label>Tick color</label><input type="color" id="tickColor" value="#444444" oninput="redraw()"></div>
+        <div class="row"><label>Show hands</label>
+          <select class="grow" id="showHands" onchange="redraw()">
+            <option value="none">None (digital)</option>
+            <option value="simple">Simple</option>
+            <option value="bold">Bold</option>
+          </select>
+        </div>
+        <div class="row"><label>Hand color</label><input type="color" id="handColor" value="#ffffff" oninput="redraw()"></div>
+        <div class="row"><label>Second hand</label>
+          <select class="grow" id="showSeconds" onchange="redraw()">
+            <option value="none">None</option>
+            <option value="line">Line</option>
+            <option value="dot">Dot tip</option>
+          </select>
+        </div>
+        <div class="row"><label>Second color</label><input type="color" id="secondColor" value="#e05252" oninput="redraw()"></div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">project settings</div>
+        <div class="row"><label>App name</label><input type="text" id="appName" value="MyWatchFace" class="grow" oninput="updateCode()"></div>
+        <div class="row"><label>Target SDK</label>
+          <select class="grow" id="targetSdk" onchange="updateCode()">
+            <option value="4.2.4">4.2.4 (latest stable)</option>
+            <option value="3.4.0">3.4.0</option>
+            <option value="3.3.0">3.3.0</option>
+          </select>
+        </div>
+        <div class="row"><label>Units</label>
+          <select class="grow" id="unitSystem" onchange="updateCode()">
+            <option value="imperial">Imperial (mi, °F)</option>
+            <option value="metric">Metric (km, °C)</option>
+          </select>
+        </div>
+        <div class="row"><label>Time format</label>
+          <select class="grow" id="timeFormat" onchange="updateCode()">
+            <option value="12">12-hour</option>
+            <option value="24">24-hour</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CENTER: CANVAS ── -->
+  <div class="canvas-area">
+    <div class="canvas-wrap">
+      <canvas id="watchCanvas"></canvas>
+    </div>
+    <div class="canvas-hint" id="canvasHint">Select a field or icon from the left panel, then click to place it on the watch. Drag placed items to reposition.</div>
+    <div class="canvas-toolbar">
+      <button class="btn sm" onclick="clearAll()">🗑 Clear all</button>
+      <button class="btn sm" onclick="toggleGrid()">⊞ Grid</button>
+      <button class="btn sm" onclick="undoLast()">↩ Undo</button>
+      <button class="btn sm" onclick="exportPreview()">📷 Export PNG</button>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="panel">
+    <div class="panel-section">
+      <div class="section-title">selected element</div>
+      <div id="noSelMsg" style="color:var(--text3);font-size:11px">Click a placed element on the watch to select and edit it.</div>
+      <div id="selControls" style="display:none">
+        <div class="row"><label>Color</label><input type="color" id="selColor" value="#ffffff" oninput="updateSel('color',this.value);redraw()"></div>
+        <div class="row"><label>Font size</label>
+          <input type="range" id="selSize" min="10" max="60" value="24" oninput="document.getElementById('selSizeVal').textContent=this.value;updateSel('size',+this.value);redraw()">
+          <span class="row-val" id="selSizeVal">24</span>
+        </div>
+        <div class="row"><label>Weight</label>
+          <select class="grow" id="selBold" onchange="updateSel('bold',this.value==='true');redraw()">
+            <option value="false">Regular</option>
+            <option value="true">Bold</option>
+          </select>
+        </div>
+        <div class="row"><label>Align</label>
+          <select class="grow" id="selAlign" onchange="updateSel('align',this.value);redraw()">
+            <option>center</option><option>left</option><option>right</option>
+          </select>
+        </div>
+        <div class="row"><label>Prefix</label>
+          <input type="text" id="selLabel" class="grow" placeholder="e.g. HR:" oninput="updateSel('label',this.value);redraw()">
+        </div>
+        <div class="row"><label>Shadow</label>
+          <select class="grow" id="selShadow" onchange="updateSel('shadow',this.value==='true');redraw()">
+            <option value="false">None</option>
+            <option value="true">Drop shadow</option>
+          </select>
+        </div>
+        <div class="row"><label>Opacity</label>
+          <input type="range" min="20" max="100" value="100" id="selOpacity" oninput="document.getElementById('selOpacityVal').textContent=this.value+'%';updateSel('opacity',+this.value/100);redraw()">
+          <span class="row-val" id="selOpacityVal">100%</span>
+        </div>
+        <hr>
+        <div class="row"><label>X pos</label>
+          <input type="number" id="selX" class="grow" oninput="updateSel('x',+this.value);redraw()">
+          <label style="min-width:20px">Y</label>
+          <input type="number" id="selY" class="grow" oninput="updateSel('y',+this.value);redraw()">
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn sm" onclick="nudge(-1,0)">◀</button>
+          <button class="btn sm" onclick="nudge(1,0)">▶</button>
+          <button class="btn sm" onclick="nudge(0,-1)">▲</button>
+          <button class="btn sm" onclick="nudge(0,1)">▼</button>
+          <button class="btn sm danger" style="margin-left:auto" onclick="removeSelected()">🗑 Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Icon-specific controls -->
+    <div id="iconControls" class="panel-section" style="display:none">
+      <div class="section-title">icon / drawable</div>
+      <div class="row"><label>Scale</label>
+        <input type="range" min="12" max="80" value="32" id="selIconSize" oninput="document.getElementById('selIconSizeVal').textContent=this.value+'px';updateSel('iconSize',+this.value);redraw()">
+        <span class="row-val" id="selIconSizeVal">32px</span>
+      </div>
+      <div class="row"><label>Tint</label>
+        <select class="grow" id="selTint" onchange="updateSel('tint',this.value);redraw()">
+          <option value="none">Original</option>
+          <option value="white">White</option>
+          <option value="color">Custom color</option>
+        </select>
+      </div>
+      <div class="row" id="tintColorRow" style="display:none"><label>Tint color</label><input type="color" id="selTintColor" value="#4f8ef7" oninput="updateSel('tintColor',this.value);redraw()"></div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel-section" style="padding-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="section-title" style="margin:0">generated monkey c</div>
+        <div style="display:flex;gap:5px">
+          <button class="btn sm" onclick="copyCode()">Copy</button>
+          <button class="btn sm accent" onclick="downloadCode()">Save .mc</button>
+        </div>
+      </div>
+    </div>
+    <div class="code-wrap">
+      <pre id="codeOut"></pre>
+    </div>
   </div>
 </div>
 
+<div id="toast">Copied to clipboard!</div>
+
 <script>
+// ────────────────────────────────────────────────
+// DATA DEFINITIONS
+// ────────────────────────────────────────────────
 const FIELDS = [
-  {id:'time',label:'Time',symbol:'⏱',sample:'10:09',dataKey:'TIME'},
-  {id:'date',label:'Date',symbol:'📅',sample:'Wed 10',dataKey:'DATE'},
-  {id:'steps',label:'Steps',symbol:'👟',sample:'8,432',dataKey:'STEPS'},
-  {id:'heart',label:'Heart rate',symbol:'♥',sample:'72 bpm',dataKey:'HEART_RATE'},
-  {id:'battery',label:'Battery',symbol:'🔋',sample:'84%',dataKey:'BATTERY'},
-  {id:'calories',label:'Calories',symbol:'🔥',sample:'1,240',dataKey:'CALORIES'},
-  {id:'distance',label:'Distance',symbol:'📍',sample:'3.2 mi',dataKey:'DISTANCE'},
-  {id:'floors',label:'Floors',symbol:'🏢',sample:'12',dataKey:'FLOORS'},
-  {id:'stress',label:'Stress',symbol:'🧠',sample:'Low',dataKey:'STRESS'},
-  {id:'oxygen',label:'SpO2',symbol:'💨',sample:'98%',dataKey:'PULSE_OX'},
-  {id:'sunrise',label:'Sunrise',symbol:'🌅',sample:'5:42am',dataKey:'SUNRISE'},
-  {id:'sunset',label:'Sunset',symbol:'🌇',sample:'8:11pm',dataKey:'SUNSET'},
-  {id:'weather',label:'Weather',symbol:'🌤',sample:'75°F',dataKey:'WEATHER'},
-  {id:'active',label:'Active min',symbol:'⚡',sample:'42 min',dataKey:'ACTIVE_MINUTES'},
+  { id:'time',    label:'Time',       sample:'10:09',    dataExpr: `_getTime()`,           monkeyC: `getTimeStr()` },
+  { id:'timesec', label:'Time+Sec',   sample:'10:09:30', dataExpr: `_getTimeSec()`,        monkeyC: `getTimeSecStr()` },
+  { id:'date',    label:'Date',       sample:'Wed Jun 10',dataExpr:`_getDate()`,            monkeyC: `getDateStr()` },
+  { id:'day',     label:'Day name',   sample:'Wednesday', dataExpr:`_getDay()`,             monkeyC: `getDayStr()` },
+  { id:'steps',   label:'Steps',      sample:'8,432',    dataExpr: `_getSteps()`,          monkeyC: `getStepsStr()` },
+  { id:'stepgoal',label:'Step goal',  sample:'74%',      dataExpr: `_getStepGoal()`,       monkeyC: `getStepGoalStr()` },
+  { id:'heart',   label:'Heart rate', sample:'72 bpm',   dataExpr: `_getHR()`,             monkeyC: `getHRStr()` },
+  { id:'battery', label:'Battery',    sample:'84%',      dataExpr: `_getBattery()`,        monkeyC: `getBatteryStr()` },
+  { id:'calories',label:'Calories',   sample:'1,240',    dataExpr: `_getCalories()`,       monkeyC: `getCaloriesStr()` },
+  { id:'distance',label:'Distance',   sample:'3.2 mi',   dataExpr: `_getDistance()`,       monkeyC: `getDistanceStr()` },
+  { id:'floors',  label:'Floors',     sample:'12',       dataExpr: `_getFloors()`,         monkeyC: `getFloorsStr()` },
+  { id:'oxygen',  label:'SpO2',       sample:'98%',      dataExpr: `_getSpO2()`,           monkeyC: `getSpO2Str()` },
+  { id:'stress',  label:'Stress',     sample:'Low',      dataExpr: `_getStress()`,         monkeyC: `getStressStr()` },
+  { id:'active',  label:'Active min', sample:'42 min',   dataExpr: `_getActiveMin()`,      monkeyC: `getActiveMinStr()` },
+  { id:'weather', label:'Weather',    sample:'75°F',     dataExpr: `_getWeather()`,        monkeyC: `getWeatherStr()` },
+  { id:'humidity',label:'Humidity',   sample:'62%',      dataExpr: `_getHumidity()`,       monkeyC: `getHumidityStr()` },
+  { id:'sunrise', label:'Sunrise',    sample:'5:42am',   dataExpr: `_getSunrise()`,        monkeyC: `getSunriseStr()` },
+  { id:'sunset',  label:'Sunset',     sample:'8:11pm',   dataExpr: `_getSunset()`,         monkeyC: `getSunsetStr()` },
+  { id:'bodybat', label:'Body Battery',sample:'72',      dataExpr: `_getBodyBattery()`,    monkeyC: `getBodyBatteryStr()` },
+  { id:'hrv',     label:'HRV',        sample:'42 ms',    dataExpr: `_getHRV()`,            monkeyC: `getHRVStr()` },
+  { id:'notifs',  label:'Notifications',sample:'3',      dataExpr: `_getNotifs()`,         monkeyC: `getNotifsStr()` },
+  { id:'altitude',label:'Altitude',   sample:'1,243 ft', dataExpr: `_getAltitude()`,       monkeyC: `getAltitudeStr()` },
+  { id:'custom',  label:'Custom text', sample:'MY WATCH', dataExpr:`_getCustom()`,         monkeyC: `getCustomStr()` },
 ];
 
-let placed = [];
+// Garmin built-in icon identifiers (rendered as canvas shapes for preview)
+const GARMIN_ICONS = [
+  { id:'steps_icon',   label:'Steps',      draw: drawStepsIcon },
+  { id:'heart_icon',   label:'Heart',      draw: drawHeartIcon },
+  { id:'battery_icon', label:'Battery',    draw: drawBatteryIcon },
+  { id:'signal_icon',  label:'Signal',     draw: drawSignalIcon },
+  { id:'bluetooth',    label:'Bluetooth',  draw: drawBluetoothIcon },
+  { id:'dnd',          label:'DnD',        draw: drawDndIcon },
+  { id:'alarm',        label:'Alarm',      draw: drawAlarmIcon },
+  { id:'notification', label:'Notif',      draw: drawNotifIcon },
+  { id:'run',          label:'Running',    draw: drawRunIcon },
+  { id:'floors_icon',  label:'Floors',     draw: drawFloorsIcon },
+  { id:'calories_icon',label:'Calories',   draw: drawCalIcon },
+  { id:'sun',          label:'Sun',        draw: drawSunIcon },
+  { id:'moon',         label:'Moon',       draw: drawMoonIcon },
+  { id:'weather_icon', label:'Weather',    draw: drawWeatherIcon },
+  { id:'bike',         label:'Bike',       draw: drawBikeIcon },
+  { id:'swim',         label:'Swim',       draw: drawSwimIcon },
+];
+
+// ────────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────────
+let placed = [];       // { id, type:'field'|'icon'|'bgImage', fieldId?, iconId?, x, y, color, size, bold, align, label, shadow, opacity, iconSize, tint, tintColor }
 let selectedId = null;
 let pendingField = null;
-let dragging = null;
+let pendingIcon = null;
+let bgImage = null;
+let bgImageVisible = true;
+let showGrid = false;
+let history = [];
+let devW = 260, devH = 260;
+let canvasDisplaySize = 240;
 
-function switchTab(t){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('tab-fields').style.display=t==='fields'?'':'none';
-  document.getElementById('tab-style').style.display=t==='style'?'':'none';
+const canvas = document.getElementById('watchCanvas');
+const ctx = canvas.getContext('2d');
+
+// ────────────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────────────
+function init() {
+  buildFieldPalette();
+  buildIconGrid();
+  updateCanvasSize();
+  updateCode();
 }
 
-function buildPalette(){
-  const d=document.getElementById('fieldPalette');
-  d.innerHTML='';
-  FIELDS.forEach(f=>{
-    const alreadyOn=placed.some(p=>p.fieldId===f.id);
-    const c=document.createElement('span');
-    c.className='field-chip'+(alreadyOn?' on-watch':'');
-    c.title=alreadyOn?'Already placed — click to reselect':'Click then click on watch to place';
-    c.innerHTML=`<i class="ti ti-plus" aria-hidden="true" style="font-size:12px"></i> ${f.label}`;
-    c.onclick=()=>{
-      pendingField=f;
-      document.querySelectorAll('.field-chip').forEach(x=>x.style.outline='');
-      c.style.outline='2px solid var(--color-border-info)';
+// ────────────────────────────────────────────────
+// CANVAS SETUP
+// ────────────────────────────────────────────────
+function updateCanvasSize() {
+  const res = document.getElementById('watchRes').value;
+  if (res.includes('x')) {
+    const parts = res.split('x');
+    devW = +parts[0]; devH = +parts[1];
+  } else {
+    devW = devH = +res;
+  }
+  canvas.width = devW;
+  canvas.height = devH;
+  canvasDisplaySize = +document.getElementById('previewScale').value;
+  canvas.style.width = canvasDisplaySize + 'px';
+  canvas.style.height = Math.round(canvasDisplaySize * (devH/devW)) + 'px';
+  redraw();
+  updateCode();
+}
+
+// ────────────────────────────────────────────────
+// DRAW
+// ────────────────────────────────────────────────
+function redraw() {
+  canvasDisplaySize = +document.getElementById('previewScale').value;
+  canvas.style.width = canvasDisplaySize + 'px';
+  canvas.style.height = Math.round(canvasDisplaySize * (devH/devW)) + 'px';
+
+  const shape = document.getElementById('watchShape').value;
+  const bgCol = document.getElementById('bgColor').value;
+  const bezelCol = document.getElementById('bezelColor').value;
+  const bezelW = +document.getElementById('bezelWidth').value;
+  const cx = devW/2, cy = devH/2, rx = devW/2, ry = devH/2;
+
+  ctx.clearRect(0, 0, devW, devH);
+
+  // Bezel
+  ctx.save();
+  ctx.fillStyle = bezelCol;
+  drawWatchShape(ctx, shape, cx, cy, rx+bezelW, ry+bezelW);
+  ctx.fill();
+  ctx.restore();
+
+  // Clip to watch face
+  ctx.save();
+  drawWatchShape(ctx, shape, cx, cy, rx, ry);
+  ctx.clip();
+
+  // Background color
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, devW, devH);
+
+  // Background image
+  if (bgImage && bgImageVisible) {
+    const fit = document.getElementById('imgFitMode').value;
+    const opacity = +document.getElementById('imgOpacity').value / 100;
+    ctx.globalAlpha = opacity;
+    drawFitImage(ctx, bgImage, 0, 0, devW, devH, fit);
+    ctx.globalAlpha = 1;
+  }
+
+  // Grid
+  if (showGrid) {
+    ctx.strokeStyle = 'rgba(79,142,247,0.2)';
+    ctx.lineWidth = 0.5;
+    for (let x=0; x<=devW; x+=20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,devH); ctx.stroke(); }
+    for (let y=0; y<=devH; y+=20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(devW,y); ctx.stroke(); }
+    // Center crosshair
+    ctx.strokeStyle='rgba(79,142,247,0.5)';
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,devH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(devW,cy); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Tick marks
+  const tickMode = document.getElementById('showTicks').value;
+  if (tickMode !== 'none' && shape === 'round') {
+    const tickCol = document.getElementById('tickColor').value;
+    ctx.strokeStyle = tickCol;
+    for (let i=0; i<60; i++) {
+      if (tickMode === 'hour' && i%5 !== 0) continue;
+      const ang = (i/60) * Math.PI*2 - Math.PI/2;
+      const isHour = i%5===0;
+      const r1 = rx - (isHour ? 10 : 5);
+      const r2 = rx - 2;
+      ctx.lineWidth = isHour ? 2 : 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ang)*r1, cy + Math.sin(ang)*r1);
+      ctx.lineTo(cx + Math.cos(ang)*r2, cy + Math.sin(ang)*r2);
+      ctx.stroke();
+    }
+  }
+
+  // Clock hands
+  const handsMode = document.getElementById('showHands').value;
+  if (handsMode !== 'none') {
+    const now = new Date();
+    const h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds();
+    const handCol = document.getElementById('handColor').value;
+    const secMode = document.getElementById('showSeconds').value;
+    const secCol = document.getElementById('secondColor').value;
+    const boldHands = handsMode === 'bold';
+
+    // Hour hand
+    const hAng = ((h + m/60)/12)*Math.PI*2 - Math.PI/2;
+    drawHand(ctx, cx, cy, hAng, rx*0.5, boldHands?5:3, handCol);
+    // Minute hand
+    const mAng = (m/60)*Math.PI*2 - Math.PI/2;
+    drawHand(ctx, cx, cy, mAng, rx*0.75, boldHands?4:2, handCol);
+    // Second hand
+    if (secMode !== 'none') {
+      const sAng = (s/60)*Math.PI*2 - Math.PI/2;
+      if (secMode === 'line') drawHand(ctx, cx, cy, sAng, rx*0.85, 1, secCol);
+      else if (secMode === 'dot') {
+        drawHand(ctx, cx, cy, sAng, rx*0.82, 1, secCol);
+        ctx.beginPath(); ctx.arc(cx+Math.cos(sAng)*rx*0.82, cy+Math.sin(sAng)*rx*0.82, 4, 0, Math.PI*2);
+        ctx.fillStyle = secCol; ctx.fill();
+      }
+    }
+    // Center dot
+    ctx.beginPath(); ctx.arc(cx, cy, boldHands?5:3, 0, Math.PI*2);
+    ctx.fillStyle = handCol; ctx.fill();
+  }
+
+  // Placed fields & icons
+  placed.forEach(p => {
+    const isSelected = p.id === selectedId;
+    ctx.save();
+    ctx.globalAlpha = p.opacity || 1;
+
+    if (p.type === 'field') {
+      const f = FIELDS.find(x => x.id === p.fieldId);
+      if (!f) { ctx.restore(); return; }
+      const fontSize = p.size || 24;
+      ctx.font = `${p.bold ? 'bold ' : ''}${fontSize}px -apple-system, sans-serif`;
+      ctx.fillStyle = p.color || '#ffffff';
+      ctx.textAlign = p.align || 'center';
+      ctx.textBaseline = 'middle';
+      const txt = (p.label ? p.label + ' ' : '') + f.sample;
+      if (p.shadow) {
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+      }
+      ctx.fillText(txt, p.x, p.y);
+      ctx.shadowColor = 'transparent';
+      if (isSelected) {
+        const m = ctx.measureText(txt);
+        const tw = m.width, th = fontSize * 1.3;
+        const ax = p.align==='center'?p.x-tw/2:(p.align==='left'?p.x:p.x-tw);
+        ctx.strokeStyle = 'rgba(79,142,247,0.9)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(ax-3, p.y-th/2-2, tw+6, th+4);
+      }
+    } else if (p.type === 'icon') {
+      const ic = GARMIN_ICONS.find(x => x.id === p.iconId);
+      if (!ic) { ctx.restore(); return; }
+      const sz = p.iconSize || 32;
+      const col = p.tint==='white' ? '#ffffff' : p.tint==='color' ? (p.tintColor||'#4f8ef7') : (p.color||'#ffffff');
+      ic.draw(ctx, p.x - sz/2, p.y - sz/2, sz, col);
+      if (isSelected) {
+        ctx.strokeStyle = 'rgba(79,142,247,0.9)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(p.x-sz/2-3, p.y-sz/2-3, sz+6, sz+6);
+      }
+    }
+
+    ctx.restore();
+  });
+
+  ctx.restore(); // end clip
+
+  // Bezel highlight
+  if (bezelW > 0) {
+    ctx.save();
+    drawWatchShape(ctx, shape, cx, cy, rx+bezelW, ry+bezelW);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawWatchShape(ctx, shape, cx, cy, rx, ry) {
+  ctx.beginPath();
+  if (shape === 'round') {
+    ctx.arc(cx, cy, Math.min(rx,ry), 0, Math.PI*2);
+  } else if (shape === 'rect') {
+    ctx.roundRect(cx-rx, cy-ry, rx*2, ry*2, 8);
+  } else {
+    ctx.roundRect(cx-rx, cy-ry, rx*2, ry*2, 26);
+  }
+}
+
+function drawHand(ctx, cx, cy, angle, length, width, color) {
+  ctx.beginPath();
+  ctx.moveTo(cx - Math.cos(angle)*length*0.15, cy - Math.sin(angle)*length*0.15);
+  ctx.lineTo(cx + Math.cos(angle)*length, cy + Math.sin(angle)*length);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function drawFitImage(ctx, img, x, y, w, h, fit) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (fit === 'stretch') { ctx.drawImage(img, x, y, w, h); return; }
+  if (fit === 'center') {
+    ctx.drawImage(img, x + (w-iw)/2, y + (h-ih)/2, iw, ih); return;
+  }
+  const scale = fit==='cover' ? Math.max(w/iw, h/ih) : Math.min(w/iw, h/ih);
+  const sw = iw*scale, sh = ih*scale;
+  ctx.drawImage(img, x + (w-sw)/2, y + (h-sh)/2, sw, sh);
+}
+
+// ────────────────────────────────────────────────
+// ICON DRAW FUNCTIONS
+// ────────────────────────────────────────────────
+function drawHeartIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col; ctx.translate(x+s/2,y+s/2);
+  const sc=s/32;
+  ctx.beginPath();
+  ctx.moveTo(0,4*sc);
+  ctx.bezierCurveTo(0,2*sc,-3*sc,-2*sc,-6*sc,-2*sc);
+  ctx.bezierCurveTo(-10*sc,-2*sc,-12*sc,2*sc,-12*sc,6*sc);
+  ctx.bezierCurveTo(-12*sc,12*sc,-6*sc,18*sc,0,22*sc);
+  ctx.bezierCurveTo(6*sc,18*sc,12*sc,12*sc,12*sc,6*sc);
+  ctx.bezierCurveTo(12*sc,2*sc,10*sc,-2*sc,6*sc,-2*sc);
+  ctx.bezierCurveTo(3*sc,-2*sc,0,2*sc,0,4*sc);
+  ctx.fill(); ctx.restore();
+}
+function drawStepsIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col;
+  const u=s/8;
+  ctx.fillRect(x,y+s-u*2,u*3,u*2);
+  ctx.fillRect(x+u*3,y+s-u*4,u*3,u*4);
+  ctx.fillRect(x+u*6,y,u*2,s);
+  ctx.restore();
+}
+function drawBatteryIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col;
+  const w=s*0.8,h=s*0.45,lx=x+s*0.1,ly=y+s*0.28;
+  ctx.lineWidth=s*0.06; ctx.strokeRect(lx,ly,w,h);
+  ctx.fillRect(lx+s*0.06,ly+s*0.06,w*0.65,h-s*0.12);
+  ctx.fillRect(lx+w,ly+h*0.3,s*0.08,h*0.4);
+  ctx.restore();
+}
+function drawSignalIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col;
+  for(let i=0;i<4;i++){const bh=s*(0.2+i*0.22);ctx.fillRect(x+i*s*0.26,y+s-bh,s*0.18,bh);}
+  ctx.restore();
+}
+function drawBluetoothIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=s*0.08; ctx.lineCap='round';
+  const cx=x+s/2,top=y+s*0.05,bot=y+s*0.95,mid=y+s/2;
+  ctx.beginPath(); ctx.moveTo(cx,top); ctx.lineTo(cx+s*0.3,mid-s*0.22); ctx.lineTo(cx-s*0.3,mid+s*0.22); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,bot); ctx.lineTo(cx+s*0.3,mid+s*0.22); ctx.lineTo(cx-s*0.3,mid-s*0.22); ctx.stroke();
+  ctx.restore();
+}
+function drawDndIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle='transparent'; ctx.lineWidth=s*0.08;
+  ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s*0.42,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle=col; ctx.lineWidth=s*0.07;
+  ctx.beginPath(); ctx.moveTo(x+s*0.2,y+s/2); ctx.lineTo(x+s*0.8,y+s/2); ctx.stroke();
+  ctx.restore();
+}
+function drawAlarmIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=s*0.07;
+  ctx.beginPath(); ctx.arc(x+s/2,y+s*0.52,s*0.34,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s/2,y+s*0.35); ctx.lineTo(x+s/2,y+s*0.52); ctx.lineTo(x+s*0.62,y+s*0.52); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.22,y+s*0.18); ctx.lineTo(x+s*0.38,y+s*0.3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.78,y+s*0.18); ctx.lineTo(x+s*0.62,y+s*0.3); ctx.stroke();
+  ctx.restore();
+}
+function drawNotifIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=s*0.07;
+  const bx=x+s*0.1,by=y+s*0.15,bw=s*0.8,bh=s*0.6;
+  ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,s*0.08); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.3,by+bh); ctx.lineTo(x+s/2,y+s*0.9); ctx.lineTo(x+s*0.7,by+bh); ctx.stroke();
+  ctx.restore();
+}
+function drawRunIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x+s*0.62,y+s*0.12,s*0.1,0,Math.PI*2); ctx.fill();
+  ctx.lineWidth=s*0.08; ctx.strokeStyle=col; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(x+s*0.55,y+s*0.26); ctx.lineTo(x+s*0.45,y+s*0.5); ctx.lineTo(x+s*0.2,y+s*0.65); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.48,y+s*0.38); ctx.lineTo(x+s*0.65,y+s*0.55); ctx.lineTo(x+s*0.55,y+s*0.75); ctx.lineTo(x+s*0.75,y+s*0.88); ctx.stroke();
+  ctx.restore();
+}
+function drawFloorsIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=s*0.07; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x+s*0.2,y+s*0.8); ctx.lineTo(x+s*0.5,y+s*0.2); ctx.lineTo(x+s*0.8,y+s*0.8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.55); ctx.lineTo(x+s*0.5,y+s*0.85); ctx.lineTo(x+s*0.72,y+s*0.85); ctx.stroke();
+  ctx.restore();
+}
+function drawCalIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=s*0.07;
+  const cx=x+s/2,cy=y+s/2;
+  ctx.beginPath(); ctx.arc(cx,cy,s*0.38,-(Math.PI/2),(Math.PI*2)-(Math.PI/2),false); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,s*0.38,-(Math.PI/2),-(Math.PI/2)+Math.PI*2*0.6,false);
+  ctx.strokeStyle=col; ctx.lineWidth=s*0.1; ctx.stroke();
+  ctx.restore();
+}
+function drawSunIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col; ctx.strokeStyle=col; ctx.lineWidth=s*0.07;
+  const cx=x+s/2,cy=y+s/2;
+  ctx.beginPath(); ctx.arc(cx,cy,s*0.22,0,Math.PI*2); ctx.fill();
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*s*0.28,cy+Math.sin(a)*s*0.28);ctx.lineTo(cx+Math.cos(a)*s*0.42,cy+Math.sin(a)*s*0.42);ctx.stroke();}
+  ctx.restore();
+}
+function drawMoonIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x+s*0.52,y+s*0.5,s*0.38,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=document.getElementById('bgColor').value||'#000';
+  ctx.beginPath(); ctx.arc(x+s*0.65,y+s*0.38,s*0.3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawWeatherIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x+s*0.38,y+s*0.45,s*0.22,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+s*0.58,y+s*0.38,s*0.17,0,Math.PI*2); ctx.fill();
+  ctx.fillRect(x+s*0.15,y+s*0.52,s*0.62,s*0.16);
+  ctx.restore();
+}
+function drawBikeIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=s*0.07; ctx.lineCap='round';
+  ctx.beginPath(); ctx.arc(x+s*0.24,y+s*0.65,s*0.22,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x+s*0.76,y+s*0.65,s*0.22,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+s*0.76,y+s*0.65); ctx.lineTo(x+s*0.55,y+s*0.28); ctx.lineTo(x+s*0.38,y+s*0.28); ctx.lineTo(x+s*0.24,y+s*0.65); ctx.lineTo(x+s*0.55,y+s*0.28); ctx.stroke();
+  ctx.restore();
+}
+function drawSwimIcon(ctx,x,y,s,col) {
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=s*0.07; ctx.lineCap='round';
+  for(let i=0;i<3;i++){const oy=y+s*0.3+i*s*0.2;ctx.beginPath();ctx.moveTo(x+s*0.1,oy);ctx.bezierCurveTo(x+s*0.3,oy-s*0.1,x+s*0.5,oy+s*0.1,x+s*0.7,oy);ctx.bezierCurveTo(x+s*0.8,oy-s*0.05,x+s*0.9,oy-s*0.05,x+s*0.9,oy);ctx.stroke();}
+  ctx.restore();
+}
+
+// ────────────────────────────────────────────────
+// BUILD UI
+// ────────────────────────────────────────────────
+function buildFieldPalette() {
+  const d = document.getElementById('fieldPalette');
+  d.innerHTML = '';
+  FIELDS.forEach(f => {
+    const on = placed.some(p => p.type==='field' && p.fieldId===f.id);
+    const c = document.createElement('span');
+    c.className = 'chip' + (on?' placed':'');
+    c.textContent = f.label;
+    c.title = on ? 'Already placed' : 'Click, then click on watch to place';
+    c.onclick = () => {
+      pendingIcon = null;
+      pendingField = f;
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('pending'));
+      c.classList.add('pending');
+      document.getElementById('canvasHint').textContent = `Click on the watch to place "${f.label}"`;
     };
     d.appendChild(c);
   });
 }
 
-function buildPlacedList(){
-  const d=document.getElementById('placedList');
-  if(!placed.length){d.innerHTML='<p style="font-size:12px;color:var(--color-text-tertiary)">No fields placed yet.</p>';return;}
-  d.innerHTML='';
-  placed.forEach(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    const row=document.createElement('div');
-    row.className='field-list-item';
-    row.style.cursor='pointer';
-    if(selectedId===p.id) row.style.borderColor='var(--color-border-info)';
-    row.innerHTML=`<span style="font-size:13px">${f.symbol}</span><span style="flex:1">${f.label}</span><span style="font-size:10px;color:var(--color-text-tertiary)">${Math.round(p.x)},${Math.round(p.y)}</span>`;
-    row.onclick=()=>{selectField(p.id)};
-    d.appendChild(row);
+function buildIconGrid() {
+  const d = document.getElementById('iconGrid');
+  d.innerHTML = '';
+  GARMIN_ICONS.forEach(ic => {
+    const cell = document.createElement('div');
+    cell.className = 'icon-cell';
+    const cv = document.createElement('canvas');
+    cv.width = 24; cv.height = 24;
+    const ictx = cv.getContext('2d');
+    ic.draw(ictx, 0, 0, 24, '#9090a8');
+    cell.appendChild(cv);
+    const lbl = document.createElement('span'); lbl.textContent = ic.label;
+    cell.appendChild(lbl);
+    cell.onclick = () => {
+      pendingField = null;
+      pendingIcon = ic;
+      document.querySelectorAll('.icon-cell').forEach(x=>x.classList.remove('pending'));
+      cell.classList.add('pending');
+      document.getElementById('canvasHint').textContent = `Click on the watch to place "${ic.label}" icon`;
+    };
+    d.appendChild(cell);
   });
 }
 
-function selectField(id){
-  selectedId=id;
-  const p=placed.find(x=>x.id===id);
-  document.getElementById('selFieldNote').style.display='none';
-  document.getElementById('fieldStyleControls').style.display='';
-  if(p){
-    document.getElementById('fieldColor').value=p.color;
-    document.getElementById('fontSize').value=p.size;
-    document.getElementById('fontSizeVal').textContent=p.size;
-    document.getElementById('fontBold').value=String(p.bold);
-    document.getElementById('fieldAlign').value=p.align;
-    document.getElementById('fieldLabel').value=p.label||'';
+function buildPlacedList() {
+  const d = document.getElementById('placedList');
+  if (!placed.length) { d.innerHTML = '<p style="color:var(--text3);font-size:11px">No fields placed yet.</p>'; return; }
+  d.innerHTML = '';
+  placed.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'field-item' + (p.id===selectedId?' selected':'');
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'fi-name';
+    if (p.type==='field') {
+      const f = FIELDS.find(x=>x.id===p.fieldId);
+      nameSpan.textContent = f ? f.label : '?';
+    } else {
+      const ic = GARMIN_ICONS.find(x=>x.id===p.iconId);
+      nameSpan.textContent = ic ? '⬡ '+ic.label : '⬡ Icon';
+    }
+    const pos = document.createElement('span');
+    pos.className = 'fi-pos';
+    pos.textContent = `${Math.round(p.x)},${Math.round(p.y)}`;
+    item.appendChild(nameSpan);
+    item.appendChild(pos);
+    item.onclick = () => selectElement(p.id);
+    d.appendChild(item);
+  });
+}
+
+// ────────────────────────────────────────────────
+// SELECTION
+// ────────────────────────────────────────────────
+function selectElement(id) {
+  selectedId = id;
+  const p = placed.find(x=>x.id===id);
+  document.getElementById('noSelMsg').style.display = 'none';
+  document.getElementById('selControls').style.display = '';
+  const isIcon = p && p.type==='icon';
+  document.getElementById('iconControls').style.display = isIcon ? '' : 'none';
+
+  if (p) {
+    document.getElementById('selColor').value = p.color || '#ffffff';
+    document.getElementById('selSize').value = p.size || 24;
+    document.getElementById('selSizeVal').textContent = p.size || 24;
+    document.getElementById('selBold').value = String(!!p.bold);
+    document.getElementById('selAlign').value = p.align || 'center';
+    document.getElementById('selLabel').value = p.label || '';
+    document.getElementById('selShadow').value = String(!!p.shadow);
+    document.getElementById('selOpacity').value = Math.round((p.opacity||1)*100);
+    document.getElementById('selOpacityVal').textContent = Math.round((p.opacity||1)*100)+'%';
+    document.getElementById('selX').value = Math.round(p.x);
+    document.getElementById('selY').value = Math.round(p.y);
+    if (isIcon) {
+      document.getElementById('selIconSize').value = p.iconSize||32;
+      document.getElementById('selIconSizeVal').textContent = (p.iconSize||32)+'px';
+      document.getElementById('selTint').value = p.tint||'none';
+      document.getElementById('selTintColor').value = p.tintColor||'#4f8ef7';
+      document.getElementById('tintColorRow').style.display = p.tint==='color'?'':'none';
+    }
   }
   buildPlacedList();
   redraw();
 }
 
-function updateSelected(key,val){
-  const p=placed.find(x=>x.id===selectedId);
-  if(p) p[key]=val;
-  if(key==='size') document.getElementById('fontSizeVal').textContent=val;
+function updateSel(key, val) {
+  const p = placed.find(x=>x.id===selectedId);
+  if (!p) return;
+  p[key] = val;
+  if (key==='x') { document.getElementById('selX').value = Math.round(val); }
+  if (key==='y') { document.getElementById('selY').value = Math.round(val); }
+  if (key==='tint') { document.getElementById('tintColorRow').style.display = val==='color'?'':'none'; }
   buildPlacedList();
   updateCode();
 }
 
-function removeSelected(){
-  placed=placed.filter(x=>x.id!==selectedId);
-  selectedId=null;
-  document.getElementById('selFieldNote').style.display='';
-  document.getElementById('fieldStyleControls').style.display='none';
-  buildPalette();buildPlacedList();redraw();updateCode();
+function nudge(dx, dy) {
+  const p = placed.find(x=>x.id===selectedId);
+  if (!p) return;
+  p.x += dx; p.y += dy;
+  document.getElementById('selX').value = Math.round(p.x);
+  document.getElementById('selY').value = Math.round(p.y);
+  buildPlacedList(); redraw(); updateCode();
 }
 
-function clearAll(){placed=[];selectedId=null;document.getElementById('selFieldNote').style.display='';document.getElementById('fieldStyleControls').style.display='none';buildPalette();buildPlacedList();redraw();updateCode();}
-
-const canvas=document.getElementById('watchCanvas');
-const ctx=canvas.getContext('2d');
-
-function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return{r,g,b};}
-function hexToMonkeyC(hex){return '0x'+hex.slice(1).toUpperCase();}
-
-function redraw(){
-  const W=220,H=220,cx=110,cy=110,R=100;
-  ctx.clearRect(0,0,W,H);
-  const shape=document.getElementById('watchShape').value;
-  const bgCol=document.getElementById('bgColor').value;
-  const bezelCol=document.getElementById('bezelColor').value;
-  const bgImg=document.getElementById('bgImage').value;
-
-  ctx.save();
-  if(shape==='round'){ctx.beginPath();ctx.arc(cx,cy,R+8,0,Math.PI*2);ctx.fillStyle=bezelCol;ctx.fill();}
-  else if(shape==='rect'){ctx.fillStyle=bezelCol;ctx.beginPath();ctx.roundRect(cx-R-8,cy-R-8,(R+8)*2,(R+8)*2,14);ctx.fill();}
-  else{ctx.fillStyle=bezelCol;ctx.beginPath();ctx.roundRect(cx-R-8,cy-R-8,(R+8)*2,(R+8)*2,30);ctx.fill();}
-  ctx.restore();
-
-  ctx.save();
-  if(shape==='round'){ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();}
-  else if(shape==='rect'){ctx.beginPath();ctx.roundRect(cx-R,cy-R,R*2,R*2,8);ctx.clip();}
-  else{ctx.beginPath();ctx.roundRect(cx-R,cy-R,R*2,R*2,24);ctx.clip();}
-
-  ctx.fillStyle=bgCol;ctx.fillRect(0,0,W,H);
-
-  if(bgImg==='gradient_dark'){const g=ctx.createRadialGradient(cx,cy,20,cx,cy,R);g.addColorStop(0,'#1a1a2e');g.addColorStop(1,'#000000');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
-  else if(bgImg==='gradient_blue'){const g=ctx.createRadialGradient(cx,cy,20,cx,cy,R);g.addColorStop(0,'#0a2a4a');g.addColorStop(1,'#000820');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
-  else if(bgImg==='dots'){ctx.fillStyle='rgba(255,255,255,0.06)';for(let x=10;x<W;x+=14)for(let y=10;y<H;y+=14){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill();}}
-  else if(bgImg==='circuit'){ctx.strokeStyle='rgba(0,200,150,0.15)';ctx.lineWidth=1;for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(Math.random()*W,Math.random()*H);ctx.lineTo(Math.random()*W,Math.random()*H);ctx.stroke();}}
-
-  placed.forEach(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    const isSelected=p.id===selectedId;
-    ctx.font=`${p.bold?'bold ':''} ${p.size}px ${p.size>30?'var(--font-sans)':'sans-serif'}`;
-    ctx.fillStyle=p.color;
-    ctx.textAlign=p.align;
-    ctx.textBaseline='middle';
-    const txt=(p.label?p.label+' ':'')+f.sample;
-    const ax=p.align==='center'?p.x:(p.align==='left'?p.x-R*0.7:p.x+R*0.7);
-    ctx.fillText(txt,ax,p.y);
-    if(isSelected){ctx.strokeStyle='rgba(80,140,255,0.7)';ctx.lineWidth=1.5;const m=ctx.measureText(txt);const tw=m.width;const th=p.size*1.2;const lx=p.align==='center'?ax-tw/2:(p.align==='left'?ax:ax-tw);ctx.strokeRect(lx-3,p.y-th/2-2,tw+6,th+4);}
-  });
-  ctx.restore();
-  updateCode();
+function removeSelected() {
+  placed = placed.filter(x=>x.id!==selectedId);
+  selectedId = null;
+  document.getElementById('noSelMsg').style.display = '';
+  document.getElementById('selControls').style.display = 'none';
+  document.getElementById('iconControls').style.display = 'none';
+  buildFieldPalette(); buildPlacedList(); redraw(); updateCode();
 }
 
-canvas.addEventListener('click',e=>{
-  const rect=canvas.getBoundingClientRect();
-  const x=e.clientX-rect.left;
-  const y=e.clientY-rect.top;
-  if(pendingField){
-    const id='f_'+Date.now();
-    placed.push({id,fieldId:pendingField.id,x,y,color:'#ffffff',size:24,bold:false,align:'center',label:''});
-    pendingField=null;
-    document.querySelectorAll('.field-chip').forEach(c=>c.style.outline='');
-    selectField(id);
-    buildPalette();buildPlacedList();redraw();updateCode();
+function clearAll() {
+  if (!confirm('Clear all placed elements?')) return;
+  placed = []; selectedId = null;
+  document.getElementById('noSelMsg').style.display = '';
+  document.getElementById('selControls').style.display = 'none';
+  document.getElementById('iconControls').style.display = 'none';
+  buildFieldPalette(); buildPlacedList(); redraw(); updateCode();
+}
+
+// ────────────────────────────────────────────────
+// CANVAS INTERACTION
+// ────────────────────────────────────────────────
+let dragging = null, dragOffX = 0, dragOffY = 0;
+
+function canvasToWatch(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = devW / rect.width, scaleY = devH / rect.height;
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+
+function hitTest(p, wx, wy) {
+  if (p.type === 'field') {
+    const f = FIELDS.find(x=>x.id===p.fieldId);
+    if (!f) return false;
+    const sz = p.size||24;
+    ctx.font = `${p.bold?'bold ':''}${sz}px sans-serif`;
+    const txt = (p.label?p.label+' ':'')+f.sample;
+    const tw = ctx.measureText(txt).width, th = sz*1.4;
+    const lx = p.align==='center'?p.x-tw/2:(p.align==='left'?p.x:p.x-tw);
+    return wx>=lx-4 && wx<=lx+tw+4 && wy>=p.y-th/2 && wy<=p.y+th/2;
+  } else {
+    const sz = (p.iconSize||32)/2;
+    return Math.abs(wx-p.x)<=sz+4 && Math.abs(wy-p.y)<=sz+4;
+  }
+}
+
+canvas.addEventListener('mousedown', e => {
+  const {x,y} = canvasToWatch(e);
+  if (pendingField) {
+    saveHistory();
+    const id = 'el_'+Date.now();
+    placed.push({id, type:'field', fieldId:pendingField.id, x, y, color:'#ffffff', size:24, bold:false, align:'center', label:'', shadow:false, opacity:1});
+    pendingField = null;
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('pending'));
+    document.getElementById('canvasHint').textContent = 'Click a field or icon to place, or click a placed element to select it.';
+    selectElement(id);
+    buildFieldPalette(); buildPlacedList(); redraw(); updateCode();
     return;
   }
-  const hit=placed.find(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    ctx.font=`${p.bold?'bold ':''} ${p.size}px sans-serif`;
-    const txt=(p.label?p.label+' ':'')+f.sample;
-    const m=ctx.measureText(txt);
-    const tw=m.width,th=p.size*1.2;
-    const lx=p.align==='center'?p.x-tw/2:(p.align==='left'?p.x:p.x-tw);
-    return x>=lx-4&&x<=lx+tw+4&&y>=p.y-th/2-2&&y<=p.y+th/2+2;
-  });
-  if(hit){selectField(hit.id);switchTabByName('style');}
-  else{selectedId=null;document.getElementById('selFieldNote').style.display='';document.getElementById('fieldStyleControls').style.display='none';buildPlacedList();redraw();}
+  if (pendingIcon) {
+    saveHistory();
+    const id = 'el_'+Date.now();
+    placed.push({id, type:'icon', iconId:pendingIcon.id, x, y, color:'#ffffff', iconSize:32, tint:'none', tintColor:'#4f8ef7', opacity:1});
+    pendingIcon = null;
+    document.querySelectorAll('.icon-cell').forEach(c=>c.classList.remove('pending'));
+    document.getElementById('canvasHint').textContent = 'Click a field or icon to place, or click a placed element to select it.';
+    selectElement(id);
+    buildPlacedList(); redraw(); updateCode();
+    return;
+  }
+  // Hit test (reverse order — top items first)
+  const hit = [...placed].reverse().find(p => hitTest(p, x, y));
+  if (hit) {
+    dragging = hit.id;
+    dragOffX = x - hit.x; dragOffY = y - hit.y;
+    selectElement(hit.id);
+  } else {
+    selectedId = null;
+    document.getElementById('noSelMsg').style.display = '';
+    document.getElementById('selControls').style.display = 'none';
+    document.getElementById('iconControls').style.display = 'none';
+    buildPlacedList(); redraw();
+  }
 });
 
-function switchTabByName(t){
-  document.querySelectorAll('.tab').forEach((b,i)=>{b.classList.toggle('active',(i===0&&t==='fields')||(i===1&&t==='style'));});
-  document.getElementById('tab-fields').style.display=t==='fields'?'':'none';
-  document.getElementById('tab-style').style.display=t==='style'?'':'none';
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const {x,y} = canvasToWatch(e);
+  const p = placed.find(x=>x.id===dragging);
+  if (!p) return;
+  p.x = x - dragOffX; p.y = y - dragOffY;
+  document.getElementById('selX').value = Math.round(p.x);
+  document.getElementById('selY').value = Math.round(p.y);
+  redraw();
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (dragging) { dragging=null; buildPlacedList(); updateCode(); }
+});
+
+// ────────────────────────────────────────────────
+// IMAGE UPLOAD
+// ────────────────────────────────────────────────
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      bgImage = img;
+      bgImageVisible = true;
+      const zone = document.getElementById('imgUploadZone');
+      zone.className = 'upload-zone has-image';
+      zone.innerHTML = `✅ ${file.name}<br><span style="font-size:10px">${img.naturalWidth}×${img.naturalHeight}px — click to replace</span>`;
+      redraw(); updateCode();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function handleDragOver(e) { e.preventDefault(); document.getElementById('imgUploadZone').classList.add('drag'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('imgUploadZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const fakeEvt = { target: { files: [file] } };
+  handleImageUpload(fakeEvt);
+}
+function clearBgImage() {
+  bgImage = null;
+  const zone = document.getElementById('imgUploadZone');
+  zone.className = 'upload-zone';
+  zone.innerHTML = '📁 Click or drag an image here<br><span style="font-size:10px">PNG, JPG, BMP supported</span>';
+  redraw(); updateCode();
+}
+function toggleBgImageVisible() { bgImageVisible = !bgImageVisible; redraw(); }
+
+// ────────────────────────────────────────────────
+// HELPERS
+// ────────────────────────────────────────────────
+function switchTab(name, el) {
+  ['fields','icons','watch'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+function toggleGrid() { showGrid=!showGrid; redraw(); }
+function saveHistory() { history.push(JSON.parse(JSON.stringify(placed))); if(history.length>20) history.shift(); }
+function undoLast() { if(!history.length) return; placed=history.pop(); buildFieldPalette(); buildPlacedList(); redraw(); updateCode(); }
+function exportPreview() {
+  const link=document.createElement('a');
+  link.download='watchface-preview.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+}
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
 }
 
-let dragFieldId=null,dragOffX=0,dragOffY=0;
-canvas.addEventListener('mousedown',e=>{
-  const rect=canvas.getBoundingClientRect();
-  const x=e.clientX-rect.left,y=e.clientY-rect.top;
-  const hit=placed.find(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    ctx.font=`${p.bold?'bold ':''} ${p.size}px sans-serif`;
-    const txt=(p.label?p.label+' ':'')+f.sample;
-    const m=ctx.measureText(txt);
-    const tw=m.width,th=p.size*1.2;
-    const lx=p.align==='center'?p.x-tw/2:(p.align==='left'?p.x:p.x-tw);
-    return x>=lx-4&&x<=lx+tw+4&&y>=p.y-th/2-2&&y<=p.y+th/2+2;
+// ────────────────────────────────────────────────
+// PRESETS
+// ────────────────────────────────────────────────
+function loadPreset(device) {
+  if (!confirm('Load preset? This will clear placed elements.')) return;
+  placed=[]; selectedId=null;
+  if (device==='fenix7') {
+    document.getElementById('watchRes').value='260';
+    document.getElementById('watchShape').value='round';
+    document.getElementById('bgColor').value='#000000';
+    document.getElementById('bezelColor').value='#1a1a1a';
+    document.getElementById('showTicks').value='hour';
+    document.getElementById('showHands').value='bold';
+    document.getElementById('showSeconds').value='dot';
+    updateCanvasSize();
+    const cx=130, cy=130;
+    placed=[
+      {id:'el1',type:'field',fieldId:'time',x:cx,y:cy,color:'#ffffff',size:48,bold:true,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el2',type:'field',fieldId:'date',x:cx,y:cy+44,color:'#aaaacc',size:18,bold:false,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el3',type:'field',fieldId:'steps',x:cx-60,y:cy+80,color:'#3ecf6e',size:18,bold:false,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el4',type:'field',fieldId:'heart',x:cx+60,y:cy+80,color:'#e05252',size:18,bold:false,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el5',type:'icon',iconId:'steps_icon',x:cx-60,y:cy+58,color:'#3ecf6e',iconSize:20,tint:'color',tintColor:'#3ecf6e',opacity:1},
+      {id:'el6',type:'icon',iconId:'heart_icon',x:cx+60,y:cy+58,color:'#e05252',iconSize:20,tint:'color',tintColor:'#e05252',opacity:1},
+      {id:'el7',type:'field',fieldId:'battery',x:cx,y:cy-72,color:'#f5c542',size:14,bold:false,align:'center',label:'',shadow:false,opacity:1},
+    ];
+  } else if (device==='venu2') {
+    document.getElementById('watchRes').value='390';
+    document.getElementById('watchShape').value='round';
+    document.getElementById('bgColor').value='#050515';
+    document.getElementById('bezelColor').value='#111128';
+    document.getElementById('showTicks').value='minute';
+    document.getElementById('showHands').value='none';
+    updateCanvasSize();
+    const cx=195,cy=195;
+    placed=[
+      {id:'el1',type:'field',fieldId:'time',x:cx,y:cy-30,color:'#e0e8ff',size:64,bold:true,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el2',type:'field',fieldId:'date',x:cx,y:cy+32,color:'#7080aa',size:22,bold:false,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el3',type:'field',fieldId:'steps',x:cx-90,y:cy+90,color:'#3ecf6e',size:20,bold:false,align:'center',label:'STEPS',shadow:false,opacity:1},
+      {id:'el4',type:'field',fieldId:'heart',x:cx,y:cy+90,color:'#e05252',size:20,bold:false,align:'center',label:'BPM',shadow:false,opacity:1},
+      {id:'el5',type:'field',fieldId:'battery',x:cx+90,y:cy+90,color:'#f5c542',size:20,bold:false,align:'center',label:'BAT',shadow:false,opacity:1},
+    ];
+  } else if (device==='fr255') {
+    document.getElementById('watchRes').value='218x218';
+    document.getElementById('watchShape').value='round';
+    document.getElementById('bgColor').value='#000000';
+    document.getElementById('bezelColor').value='#222222';
+    document.getElementById('showTicks').value='hour';
+    document.getElementById('showHands').value='none';
+    updateCanvasSize();
+    placed=[
+      {id:'el1',type:'field',fieldId:'time',x:109,y:90,color:'#ffffff',size:44,bold:true,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el2',type:'field',fieldId:'steps',x:80,y:148,color:'#4f8ef7',size:18,bold:false,align:'center',label:'',shadow:false,opacity:1},
+      {id:'el3',type:'field',fieldId:'heart',x:140,y:148,color:'#e05252',size:18,bold:false,align:'center',label:'',shadow:false,opacity:1},
+    ];
+  }
+  buildFieldPalette(); buildPlacedList(); redraw(); updateCode();
+}
+
+// ────────────────────────────────────────────────
+// MONKEY C CODE GENERATION
+// ────────────────────────────────────────────────
+function hexToMonkeyC(hex) {
+  return '0x' + hex.replace('#','').toUpperCase();
+}
+function sizeToFont(size, bold) {
+  if (size <= 12) return 'Graphics.FONT_XTINY';
+  if (size <= 16) return 'Graphics.FONT_TINY';
+  if (size <= 20) return 'Graphics.FONT_SMALL';
+  if (size <= 26) return bold ? 'Graphics.FONT_MEDIUM' : 'Graphics.FONT_MEDIUM';
+  if (size <= 32) return bold ? 'Graphics.FONT_LARGE' : 'Graphics.FONT_LARGE';
+  if (size <= 40) return 'Graphics.FONT_NUMBER_MILD';
+  if (size <= 50) return 'Graphics.FONT_NUMBER_MEDIUM';
+  if (size <= 56) return 'Graphics.FONT_NUMBER_HOT';
+  return 'Graphics.FONT_NUMBER_THAI_HOT';
+}
+function alignToMonkeyC(a) {
+  if (a==='left') return 'Graphics.TEXT_JUSTIFY_LEFT';
+  if (a==='right') return 'Graphics.TEXT_JUSTIFY_RIGHT';
+  return 'Graphics.TEXT_JUSTIFY_CENTER';
+}
+
+function updateCode() {
+  const appName = document.getElementById('appName').value || 'MyWatchFace';
+  const sdk = document.getElementById('targetSdk').value;
+  const units = document.getElementById('unitSystem').value;
+  const tf = document.getElementById('timeFormat').value;
+  const bgCol = document.getElementById('bgColor').value;
+  const shape = document.getElementById('watchShape').value;
+  const res = document.getElementById('watchRes').value;
+  const handsMode = document.getElementById('showHands').value;
+  const tickMode = document.getElementById('showTicks').value;
+  const secMode = document.getElementById('showSeconds').value;
+  const hasBgImg = !!bgImage;
+
+  const fieldItems = placed.filter(p=>p.type==='field');
+  const iconItems  = placed.filter(p=>p.type==='icon');
+  const hasSpo2    = fieldItems.some(p=>p.fieldId==='oxygen');
+  const hasWeather = fieldItems.some(p=>['weather','humidity','sunrise','sunset'].includes(p.fieldId));
+  const hasBB      = fieldItems.some(p=>p.fieldId==='bodybat');
+  const hasHRV     = fieldItems.some(p=>p.fieldId==='hrv');
+
+  let imports = [
+    'import Toybox.WatchUi;',
+    'import Toybox.Graphics;',
+    'import Toybox.System;',
+    'import Toybox.ActivityMonitor;',
+    'import Toybox.Activity;',
+    'import Toybox.Lang;',
+  ];
+  if (hasWeather) imports.push('import Toybox.Weather;');
+  if (hasSpo2)    imports.push('// SpO2: enable <uses-permission id="com.garmin.connectiq.permission.DATA_FIELDS" /> in manifest.xml');
+  if (hasBB)      imports.push('// Body Battery: enable Body Battery sensor in manifest.xml');
+
+  // Data fetch functions
+  const dataFuncs = [];
+  const usedFields = [...new Set(fieldItems.map(p=>p.fieldId))];
+
+  const funcMap = {
+    time:     `    function getTimeStr() as String {\n        var now = System.getClockTime();\n        ${tf==='12' ? `var h = now.hour % 12;\n        if (h == 0) { h = 12; }\n        return h.format("%d") + ":" + now.min.format("%02d");` : `return now.hour.format("%02d") + ":" + now.min.format("%02d");`}\n    }`,
+    timesec:  `    function getTimeSecStr() as String {\n        var now = System.getClockTime();\n        return now.hour.format("%02d") + ":" + now.min.format("%02d") + ":" + now.sec.format("%02d");\n    }`,
+    date:     `    function getDateStr() as String {\n        var now = Time.now();\n        var info = Gregorian.info(now, Time.FORMAT_MEDIUM);\n        return info.day_of_week + " " + info.month + " " + info.day.format("%d");\n    }`,
+    day:      `    function getDayStr() as String {\n        var info = Gregorian.info(Time.now(), Time.FORMAT_LONG);\n        return info.day_of_week;\n    }`,
+    steps:    `    function getStepsStr() as String {\n        var info = ActivityMonitor.getInfo();\n        return info.steps != null ? info.steps.format("%d") : "--";\n    }`,
+    stepgoal: `    function getStepGoalStr() as String {\n        var info = ActivityMonitor.getInfo();\n        if (info.steps != null && info.stepGoal != null && info.stepGoal > 0) {\n            return ((info.steps.toFloat() / info.stepGoal.toFloat()) * 100).format("%.0f") + "%";\n        }\n        return "--";\n    }`,
+    heart:    `    function getHRStr() as String {\n        var activity = Activity.getActivityInfo();\n        if (activity != null && activity.currentHeartRate != null) {\n            return activity.currentHeartRate.toString() + " bpm";\n        }\n        return "--";\n    }`,
+    battery:  `    function getBatteryStr() as String {\n        var stats = System.getSystemStats();\n        return stats.battery.format("%.0f") + "%";\n    }`,
+    calories: `    function getCaloriesStr() as String {\n        var info = ActivityMonitor.getInfo();\n        return info.calories != null ? info.calories.format("%d") : "--";\n    }`,
+    distance: `    function getDistanceStr() as String {\n        var info = ActivityMonitor.getInfo();\n        if (info.distance != null) {\n            ${units==='metric' ? `return (info.distance / 100000.0).format("%.1f") + " km";` : `return (info.distance / 160934.4).format("%.1f") + " mi";`}\n        }\n        return "--";\n    }`,
+    floors:   `    function getFloorsStr() as String {\n        var info = ActivityMonitor.getInfo();\n        return info.floorsClimbed != null ? info.floorsClimbed.toString() : "--";\n    }`,
+    oxygen:   `    function getSpO2Str() as String {\n        // Requires PulseOx permission in manifest.xml\n        return "--"; // SensorHistory.getOxygenSaturationHistory() available on supported devices\n    }`,
+    stress:   `    function getStressStr() as String {\n        var info = ActivityMonitor.getInfo();\n        if (info has :stressScore && info.stressScore != null) {\n            var s = info.stressScore;\n            if (s < 26) { return "Low"; } else if (s < 51) { return "Medium"; } else if (s < 76) { return "High"; } else { return "Very High"; }\n        }\n        return "--";\n    }`,
+    active:   `    function getActiveMinStr() as String {\n        var info = ActivityMonitor.getInfo();\n        if (info.activeMinutesWeek != null) { return info.activeMinutesWeek.total.toString() + " min"; }\n        return "--";\n    }`,
+    weather:  `    function getWeatherStr() as String {\n        // Requires Toybox.Weather and location permission\n        var cond = Weather.getCurrentConditions();\n        if (cond != null && cond.temperature != null) {\n            ${units==='metric' ? `return cond.temperature.format("%d") + "°C";` : `return ((cond.temperature * 9.0/5.0) + 32).format("%.0f") + "°F";`}\n        }\n        return "--";\n    }`,
+    humidity: `    function getHumidityStr() as String {\n        var cond = Weather.getCurrentConditions();\n        return (cond != null && cond.relativeHumidity != null) ? cond.relativeHumidity.format("%d") + "%" : "--";\n    }`,
+    sunrise:  `    function getSunriseStr() as String {\n        var cond = Weather.getCurrentConditions();\n        if (cond != null && cond.observationLocationLat != null) {\n            // Use Toybox.Math sunrise calculation or Weather API\n        }\n        return "--";\n    }`,
+    sunset:   `    function getSunsetStr() as String {\n        return "--"; // See getSunriseStr\n    }`,
+    bodybat:  `    function getBodyBatteryStr() as String {\n        // Requires Body Battery sensor\n        if (ActivityMonitor has :MONITOR_BODY_BATTERY) {\n            var info = ActivityMonitor.getInfo();\n            if (info has :bodyBatteryChargeLevel && info.bodyBatteryChargeLevel != null) {\n                return info.bodyBatteryChargeLevel.format("%d");\n            }\n        }\n        return "--";\n    }`,
+    hrv:      `    function getHRVStr() as String {\n        // Requires HRV sensor support (Fenix 7 series, Epix 2)\n        return "--"; // SensorHistory.getHrvHistory() on supported devices\n    }`,
+    notifs:   `    function getNotifsStr() as String {\n        var deviceSettings = System.getDeviceSettings();\n        return deviceSettings.notificationCount != null ? deviceSettings.notificationCount.toString() : "0";\n    }`,
+    altitude: `    function getAltitudeStr() as String {\n        var activity = Activity.getActivityInfo();\n        if (activity != null && activity.altitude != null) {\n            ${units==='metric' ? `return activity.altitude.format("%.0f") + " m";` : `return (activity.altitude * 3.28084).format("%.0f") + " ft";`}\n        }\n        return "--";\n    }`,
+    custom:   `    function getCustomStr() as String {\n        return "MY WATCH"; // Replace with your custom text\n    }`,
+  };
+
+  usedFields.forEach(fid => { if (funcMap[fid]) dataFuncs.push(funcMap[fid]); });
+
+  // Draw calls
+  const drawCalls = [];
+
+  if (hasBgImg) {
+    drawCalls.push(`        // Background image — add your image to resources/images/ and set id="bgImage" in resources/images/images.xml\n        dc.drawBitmap(0, 0, Rez.Drawables.bgImage);`);
+  }
+
+  fieldItems.forEach(p => {
+    const f = FIELDS.find(x=>x.id===p.fieldId);
+    if (!f) return;
+    const col = hexToMonkeyC(p.color);
+    const font = sizeToFont(p.size||24, p.bold);
+    const just = alignToMonkeyC(p.align||'center');
+    const x = Math.round(p.x), y = Math.round(p.y);
+    const prefix = p.label ? `"${p.label} " + ` : '';
+    drawCalls.push(`        dc.setColor(${col}, Graphics.COLOR_TRANSPARENT);\n        dc.drawText(${x}, ${y}, ${font}, ${prefix}${f.monkeyC}, ${just} | Graphics.TEXT_JUSTIFY_VCENTER);`);
   });
-  if(hit&&!pendingField){dragFieldId=hit.id;dragOffX=x-hit.x;dragOffY=y-hit.y;canvas.style.cursor='move';}
-});
-canvas.addEventListener('mousemove',e=>{
-  if(!dragFieldId)return;
-  const rect=canvas.getBoundingClientRect();
-  const x=e.clientX-rect.left,y=e.clientY-rect.top;
-  const p=placed.find(x=>x.id===dragFieldId);
-  if(p){p.x=x-dragOffX;p.y=y-dragOffY;redraw();}
-});
-canvas.addEventListener('mouseup',()=>{if(dragFieldId){dragFieldId=null;canvas.style.cursor='crosshair';buildPlacedList();updateCode();}});
 
-function updateCode(){
-  const appName=document.getElementById('appName').value||'MyWatchFace';
-  const bgCol=document.getElementById('bgColor').value;
-  const shape=document.getElementById('watchShape').value;
+  iconItems.forEach(p => {
+    const ic = GARMIN_ICONS.find(x=>x.id===p.iconId);
+    if (!ic) return;
+    const col = p.tint==='none' ? hexToMonkeyC(p.color||'#ffffff') : p.tint==='white' ? '0xFFFFFF' : hexToMonkeyC(p.tintColor||'#4f8ef7');
+    const sz = p.iconSize || 32;
+    const x = Math.round(p.x - sz/2), y = Math.round(p.y - sz/2);
+    drawCalls.push(`        // Icon: ${ic.label} — use a drawable resource or custom draw\n        dc.setColor(${col}, Graphics.COLOR_TRANSPARENT);\n        // dc.drawBitmap(${x}, ${y}, Rez.Drawables.icon_${ic.id});`);
+  });
 
-  let imports=`import Toybox.WatchUi;\nimport Toybox.Graphics;\nimport Toybox.System;\nimport Toybox.ActivityMonitor;\nimport Toybox.Activity;\nimport Toybox.SensorHistory;\n`;
-
-  let fieldDecl=placed.map(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    return `    var _${f.id}Str as String = "";`;
-  }).join('\n');
-
-  let updateFields=placed.map(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    switch(f.id){
-      case 'time': return `        var now = System.getClockTime();\n        _timeStr = now.hour.format("%02d") + ":" + now.min.format("%02d");`;
-      case 'date': return `        var today = Gregorian.info(Time.now(), Time.FORMAT_MEDIUM);\n        _dateStr = today.day_of_week + " " + today.day;`;
-      case 'steps': return `        var ai = ActivityMonitor.getInfo();\n        _stepsStr = ai.steps != null ? ai.steps.toString() : "--";`;
-      case 'heart': return `        var act = Activity.getActivityInfo();\n        _heartStr = (act != null && act.currentHeartRate != null) ? act.currentHeartRate.toString() + " bpm" : "--";`;
-      case 'battery': return `        var sys = System.getSystemStats();\n        _batteryStr = sys.battery.format("%.0f") + "%";`;
-      case 'calories': return `        var ai2 = ActivityMonitor.getInfo();\n        _caloriesStr = ai2.calories != null ? ai2.calories.toString() : "--";`;
-      case 'distance': return `        var ai3 = ActivityMonitor.getInfo();\n        _distanceStr = ai3.distance != null ? (ai3.distance / 100000.0).format("%.1f") + " mi" : "--";`;
-      case 'floors': return `        var ai4 = ActivityMonitor.getInfo();\n        _floorsStr = ai4.floorsClimbed != null ? ai4.floorsClimbed.toString() : "--";`;
-      case 'oxygen': return `        _oxygenStr = "--"; // Requires PulseOx permission in manifest`;
-      case 'stress': return `        _stressStr = "--"; // Requires Body Battery sensor support`;
-      case 'sunrise': return `        _sunriseStr = "--"; // Use Toybox.Weather for sunrise/sunset`;
-      case 'sunset': return `        _sunsetStr = "--"; // Use Toybox.Weather for sunrise/sunset`;
-      case 'weather': return `        _weatherStr = "--"; // Requires Toybox.Weather and location permission`;
-      case 'active': return `        var ai5 = ActivityMonitor.getInfo();\n        _activeStr = ai5.activeMinutesWeek != null ? ai5.activeMinutesWeek.total.toString() + " min" : "--";`;
-      default: return `        _${f.id}Str = "--";`;
+  // Analog hands
+  if (handsMode !== 'none') {
+    drawCalls.push(`\n        // Analog hands\n        var clockTime = System.getClockTime();\n        var hAngle = ((clockTime.hour % 12 + clockTime.min / 60.0) / 12.0) * Math.PI * 2 - Math.PI / 2;\n        var mAngle = (clockTime.min / 60.0) * Math.PI * 2 - Math.PI / 2;\n        var cx = dc.getWidth() / 2;\n        var cy = dc.getHeight() / 2;\n        var r = (dc.getWidth() < dc.getHeight() ? dc.getWidth() : dc.getHeight()) / 2;\n        dc.setColor(${hexToMonkeyC(document.getElementById('handColor').value)}, Graphics.COLOR_TRANSPARENT);\n        dc.setPenWidth(${handsMode==='bold'?5:3});\n        dc.drawLine(cx, cy, (cx + Math.cos(hAngle) * r * 0.5).toNumber(), (cy + Math.sin(hAngle) * r * 0.5).toNumber());\n        dc.setPenWidth(${handsMode==='bold'?4:2});\n        dc.drawLine(cx, cy, (cx + Math.cos(mAngle) * r * 0.75).toNumber(), (cy + Math.sin(mAngle) * r * 0.75).toNumber());`);
+    if (secMode !== 'none') {
+      drawCalls.push(`        var sAngle = (clockTime.sec / 60.0) * Math.PI * 2 - Math.PI / 2;\n        dc.setColor(${hexToMonkeyC(document.getElementById('secondColor').value)}, Graphics.COLOR_TRANSPARENT);\n        dc.setPenWidth(1);\n        dc.drawLine(cx, cy, (cx + Math.cos(sAngle) * r * 0.85).toNumber(), (cy + Math.sin(sAngle) * r * 0.85).toNumber());`);
     }
-  }).join('\n\n');
+  }
 
-  let drawCalls=placed.map(p=>{
-    const f=FIELDS.find(x=>x.id===p.fieldId);
-    const mc=hexToMonkeyC(p.color);
-    const xPos=Math.round(p.x);
-    const yPos=Math.round(p.y);
-    const justMap={center:'Graphics.TEXT_JUSTIFY_CENTER',left:'Graphics.TEXT_JUSTIFY_LEFT',right:'Graphics.TEXT_JUSTIFY_RIGHT'};
-    const just=justMap[p.align]||'Graphics.TEXT_JUSTIFY_CENTER';
-    const fontMap={14:'Graphics.FONT_XTINY',16:'Graphics.FONT_TINY',20:'Graphics.FONT_SMALL',24:'Graphics.FONT_MEDIUM',28:'Graphics.FONT_LARGE',32:'Graphics.FONT_NUMBER_MILD',40:'Graphics.FONT_NUMBER_MEDIUM',48:'Graphics.FONT_NUMBER_HOT',56:'Graphics.FONT_NUMBER_THAI_HOT'};
-    let fontKey='Graphics.FONT_MEDIUM';
-    const sizes=Object.keys(fontMap).map(Number).sort((a,b)=>a-b);
-    for(const s of sizes){if(p.size<=s){fontKey=fontMap[s];break;}}
-    if(p.bold&&p.size>=32) fontKey='Graphics.FONT_NUMBER_HOT';
-    const prefix=p.label?`"${p.label} " + `:'';
-    return `        dc.setColor(${mc}, Graphics.COLOR_TRANSPARENT);\n        dc.drawText(${xPos}, ${yPos}, ${fontKey}, ${prefix}_${f.id}Str, ${just} | Graphics.TEXT_JUSTIFY_VCENTER);`;
-  }).join('\n\n');
+  const resStr = res.includes('x') ? res.replace('x','×') : `${res}×${res}`;
+  const shapeComment = shape==='round'?'Round':shape==='rect'?'Rectangle':'Semi-round';
 
-  const shapeComment=shape==='round'?'Round (e.g. Fenix, Vivoactive)':shape==='rect'?'Rectangle (e.g. Venu Sq, Forerunner 255S)':'Semi-round (e.g. Forerunner 745)';
+  const manifestNote = [
+    `        <!-- Add to manifest.xml if you use weather/SpO2/location: -->`,
+    `        <!-- <uses-permission id="com.garmin.connectiq.permission.DEVICE_INFO" /> -->`,
+    `        <!-- <uses-permission id="com.garmin.connectiq.permission.DATA_FIELDS" /> -->`,
+    hasBgImg ? `        <!-- Add bgImage to resources/images/images.xml: -->` : null,
+    hasBgImg ? `        <!-- <bitmap id="bgImage" filename="bgImage.png" /> -->` : null,
+  ].filter(Boolean).join('\n');
 
-  const code=`${imports}
-// Watch shape: ${shapeComment}
-// Generated by Garmin Watchface Builder
+  const code =
+`// ============================================================
+// ${appName}View.mc — generated by Garmin Watchface Builder
+// Target device: ${shapeComment} ${resStr}px  |  SDK ${sdk}
+// Units: ${units}  |  Time: ${tf}-hour
+// Paste into: source/${appName}View.mc
+// ============================================================
+
+${imports.join('\n')}
+import Toybox.Math;
+import Toybox.Time;
+import Toybox.Time.Gregorian;
 
 class ${appName}View extends WatchUi.WatchFace {
-
-${fieldDecl}
 
     function initialize() {
         WatchFace.initialize();
@@ -375,36 +1329,44 @@ ${fieldDecl}
     function onShow() as Void {}
 
     function onUpdate(dc as Dc) as Void {
-        _updateData();
-
-        // Background
+        // Clear background
         dc.setColor(${hexToMonkeyC(bgCol)}, ${hexToMonkeyC(bgCol)});
         dc.clear();
 
-${drawCalls}
-    }
-
-    function _updateData() as Void {
-${updateFields}
+${drawCalls.join('\n\n')}
     }
 
     function onHide() as Void {}
-}`;
 
-  document.getElementById('codeOut').textContent=code;
+    // ── Data helper functions ──────────────────────────────
+${dataFuncs.join('\n\n')}
+
 }
 
-function copyCode(){
-  const t=document.getElementById('codeOut').textContent;
-  navigator.clipboard.writeText(t).then(()=>{
-    const b=event.target.closest('button');
-    const orig=b.innerHTML;
-    b.innerHTML='<i class="ti ti-check" aria-hidden="true"></i> Copied!';
-    setTimeout(()=>b.innerHTML=orig,2000);
+// ── manifest.xml notes ────────────────────────────────────
+${manifestNote}`;
+
+  document.getElementById('codeOut').textContent = code;
+}
+
+function copyCode() {
+  const t = document.getElementById('codeOut').textContent;
+  navigator.clipboard.writeText(t).then(() => toast('Copied to clipboard!')).catch(() => {
+    const ta = document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Copied!');
   });
 }
 
-buildPalette();
-buildPlacedList();
-redraw();
+function downloadCode() {
+  const name = (document.getElementById('appName').value||'MyWatchFace') + 'View.mc';
+  const blob = new Blob([document.getElementById('codeOut').textContent], {type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+}
+
+// ────────────────────────────────────────────────
+// KICK OFF
+// ────────────────────────────────────────────────
+init();
+setInterval(redraw, 1000); // live clock hands
 </script>
+</body>
+</html>
