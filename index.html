@@ -3958,8 +3958,7 @@ function patchProductId() {
   const ta = document.getElementById('mcEditArea');
   let code = ta.value;
   if (!code.includes('instinct3amoled44') && code.includes('instinct3amoled')) {
-    code = code.replace('<iq:product id="instinct3amoled"', '<iq:product id="instinct3amoled44" />
-// <iq:product id="instinct3amoled"');
+    code = code.replace('<iq:product id="instinct3amoled"', '<iq:product id="instinct3amoled44" />\n// <iq:product id="instinct3amoled"');
     ta.value = code;
     toast('Patched: added instinct3amoled44');
   } else {
@@ -3991,8 +3990,7 @@ function patchImports() {
   toast('Added ' + added + ' import' + (added===1?'':'s'));
 }
 
-// Override updateCode to also sync the import edit area when using generated code
-const _origUpdateCode = updateCode;
+// Import code editor ready
 
 // ════════════════════════════════════════════════════════════
 // START
